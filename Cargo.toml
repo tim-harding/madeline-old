@@ -1,0 +1,8 @@
+[package]
+name = "madeline"
+version = "0.1.0"
+authors = ["Tim Harding <tim@timharding.co>"]
+edition = "2018"
+
+[dependencies]
+png = "0.15.2"
