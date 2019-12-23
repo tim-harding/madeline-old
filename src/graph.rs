@@ -4,8 +4,6 @@ pub mod plugin;
 pub use node::Node;
 pub use plugin::{Plugin, Plugins};
 
-use crate::image::Image;
-
 pub struct Graph {
     nodes: Vec<Node>,
 }

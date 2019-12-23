@@ -1,11 +1,9 @@
 use crate::graph::{
-    Graph, 
     node::Node,
     plugin::control::Control,
 };
 
 pub struct Context<'a> {
-    graph: &'a Graph,
     node: &'a Node,
 }
 

@@ -27,9 +27,9 @@ pub enum Control {
 impl From<&Kind> for Control {
     fn from(kind: &Kind) -> Self {
         match kind {
-            Integer => Control::Integer(0),
-            Float => Control::Float(0.0),
-            Text => Control::Text(String::new()),
+            Kind::Integer => Control::Integer(0),
+            Kind::Float => Control::Float(0.0),
+            Kind::Text => Control::Text(String::new()),
         }
     }
 }

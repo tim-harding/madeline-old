@@ -1,5 +1,4 @@
 use crate::graph::plugin::Plugin;
-use crate::utils::Vector2Int;
 use crate::image::{self, Image};
 use crate::graph::plugin::{control, context::Context};
 
@@ -27,7 +26,7 @@ fn image_description(ctx: Context) -> image::Description {
     image::Description::new(w, h, 4)
 }
 
-fn process(ctx: Context, out: &mut Image) {
+fn process(_: Context, out: &mut Image) {
     let h = out.height;
     let w = out.width;
     let h_f = h as f32;
