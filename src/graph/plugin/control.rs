@@ -11,10 +11,7 @@ pub struct Description {
 
 impl Description {
     pub const fn new(name: &'static str, kind: Kind) -> Self {
-        Self {
-            name,
-            kind,
-        }
+        Self { name, kind }
     }
 }
 

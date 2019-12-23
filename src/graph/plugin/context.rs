@@ -1,7 +1,4 @@
-use crate::graph::{
-    node::Node,
-    plugin::control::Control,
-};
+use crate::graph::{node::Node, plugin::control::Control};
 
 pub struct Context<'a> {
     node: &'a Node,

@@ -5,10 +5,7 @@ pub struct Vector2Int {
 
 impl Vector2Int {
     pub fn new(x: usize, y: usize) -> Self {
-        Self {
-            x, 
-            y,
-        }
+        Self { x, y }
     }
 
     pub fn default() -> Self {

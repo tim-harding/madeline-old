@@ -7,8 +7,6 @@ impl Channel {
         let count = x * y;
         let mut pixels = Vec::with_capacity(count);
         pixels.resize(count, 0.0);
-        Channel {
-            pixels,
-        }
+        Channel { pixels }
     }
 }

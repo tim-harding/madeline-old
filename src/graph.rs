@@ -1,21 +1,19 @@
 pub mod node;
 pub mod plugin;
 
-pub use node::Node;
+pub use node::{Node, Nodes};
 pub use plugin::{Plugin, Plugins};
 
 pub struct Graph {
-    nodes: Vec<Node>,
+    pub nodes: Nodes,
+    pub plugins: Plugins,
 }
 
 impl Graph {
     pub fn new() -> Self {
         Self {
-            nodes: Vec::new(),
+            nodes: Nodes::new(),
+            plugins: Plugins::new(),
         }
-    }
-    
-    pub fn add(&mut self, node: Node) {
-        self.nodes.push(node);
     }
 }

@@ -1,6 +1,6 @@
 use crate::graph::plugin::Plugin;
+use crate::graph::plugin::{context::Context, control};
 use crate::image::{self, Image};
-use crate::graph::plugin::{control, context::Context};
 
 enum Property {
     Width,

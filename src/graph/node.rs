@@ -1,10 +1,7 @@
-use crate::utils::Vector2;
+use super::plugin::{Control, Plugin, PluginId};
 use crate::image::Image;
-use super::plugin::{
-    Plugin,
-    PluginId,
-    Control,
-};
+use crate::utils::Vector2;
+use std::collections::HashMap;
 
 pub type NodeId = usize;
 
@@ -25,5 +22,24 @@ impl Node {
             cache: None,
             controls: plugin.controls(),
         }
+    }
+}
+
+pub struct Nodes {
+    next_index: usize,
+    nodes: HashMap<usize, Node>,
+}
+
+impl Nodes {
+    pub fn new() -> Self {
+        Self {
+            next_index: 0,
+            nodes: HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, node: Node) {
+        self.next_index += 1;
+        self.nodes.insert(self.next_index, node);
     }
 }
