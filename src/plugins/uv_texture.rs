@@ -14,21 +14,21 @@ const CONTROLS: [control::Description; 2] = [
 
 pub fn create() -> Plugin {
     Plugin {
-        image_description,
-        process,
+        image_description_func,
+        render_func,
         controls_desc: &CONTROLS,
     }
 }
 
-fn image_description(ctx: Context) -> image::Description {
+fn image_description_func(ctx: Context) -> image::Description {
     let w = ctx.get_prop_int(Property::Width as usize);
     let h = ctx.get_prop_int(Property::Height as usize);
     image::Description::new(w, h, 4)
 }
 
-fn process(_: Context, out: &mut Image) {
-    let h = out.height;
-    let w = out.width;
+fn render_func(_: Context, out: &mut Image) {
+    let h = out.desc.height;
+    let w = out.desc.width;
     let h_f = h as f32;
     let w_f = w as f32;
     for y in 0..h {

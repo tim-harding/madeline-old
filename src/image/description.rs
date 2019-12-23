@@ -1,3 +1,4 @@
+#[derive(PartialEq)]
 pub struct Description {
     pub width: usize,
     pub height: usize,

@@ -4,7 +4,13 @@ pub struct Context<'a> {
     node: &'a Node,
 }
 
-impl Context<'_> {
+impl<'a, 'b: 'a> Context<'a> {
+    pub fn new(node: &'b Node) -> Self {
+        Self {
+            node,
+        }
+    }
+
     pub fn get_prop_int(&self, property: usize) -> usize {
         match self.node.controls[property] {
             Control::Integer(value) => value,
