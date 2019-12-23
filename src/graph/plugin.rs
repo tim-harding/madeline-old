@@ -10,12 +10,12 @@ use image::Image;
 pub type PluginId = usize;
 
 type ImageDescriptionFunc = fn(Context) -> image::Description;
-type RenderFunc = fn(Context, &mut Image);
+type ProcessFunc = fn(Context, &mut Image);
 
 pub struct Plugin {
-    image_description_func: ImageDescriptionFunc,
-    render_func: RenderFunc,
-    controls_desc: &'static [control::Description],
+    pub image_description: ImageDescriptionFunc,
+    pub process: ProcessFunc,
+    pub controls_desc: &'static [control::Description],
 }
 
 impl Plugin {
@@ -25,14 +25,6 @@ impl Plugin {
             out.push(Control::from(&desc.kind));
         }
         out
-    }
-
-    pub fn image_description(&self, ctx: Context) -> image::Description {
-        (self.image_description_func)(ctx)
-    }
-
-    pub fn render(&self, ctx: Context, image: &mut Image) {
-        (self.render_func)(ctx, image)
     }
 }
 
@@ -49,9 +41,5 @@ impl Plugins {
 
     pub fn add(&mut self, plugin: Plugin) {
         self.plugins.push(plugin);
-    }
-
-    pub fn with_id(&self, id: PluginId) -> &Plugin {
-        &self.plugins[id]
     }
 }
