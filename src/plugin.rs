@@ -7,11 +7,16 @@ pub use desc::*;
 pub(self) mod builtin;
 
 use crate::control::Control;
-use crate::image::{self, Image};
+use crate::image::{self, Channel};
 use crate::plugin;
+use crate::utils::Vector2Int;
 
-type ImageDescFunc = fn(&[Control]) -> image::Desc;
-type RenderFunc = fn(&[Control], &mut Image);
+pub type ControlsRef<'a> = &'a[&'a Control];
+pub type ChannelsRef<'a> = &'a mut[&'a mut Channel];
+pub type Size<'a> = &'a Vector2Int;
+
+type ImageDescFunc = fn(ControlsRef) -> image::Desc;
+type RenderFunc = fn(ChannelsRef, ControlsRef, Size);
 type PlugDesc = &'static plugin::Desc;
 
 pub struct Plugin {
@@ -41,11 +46,11 @@ impl Plugin {
         out
     }
 
-    pub fn image_desc(&self, controls: &[Control]) -> image::Desc {
+    pub fn image_desc<'a>(&'a self, controls: ControlsRef<'a>) -> image::Desc {
         (self.image_desc_func)(controls)
     }
 
-    pub fn render(&self, controls: &[Control], image: &mut Image) {
-        (self.render_func)(controls, image)
+    pub fn render<'a>(&'a self, channels: ChannelsRef<'a>, controls: ControlsRef<'a>, size: Size<'a>) {
+        (self.render_func)(channels, controls, size)
     }
 }

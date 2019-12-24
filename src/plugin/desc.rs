@@ -1,7 +1,13 @@
 use crate::control;
+use crate::image::Format;
+
+pub struct Input {
+    name: &'static str,
+    format: Format,
+}
 
 type Name = &'static str;
-type Inputs = &'static [&'static str];
+type Inputs = &'static [Input];
 type Controls = &'static [control::Desc];
 
 pub struct Desc {
