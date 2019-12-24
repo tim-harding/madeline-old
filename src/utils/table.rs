@@ -6,7 +6,7 @@ pub struct Table<T> {
     values: HashMap<Id, T>,
 }
 
-impl struct Table<T> {
+impl<T> Table<T> {
     pub fn new() -> Self {
         Self {
             next_id: 0,
@@ -21,7 +21,7 @@ impl struct Table<T> {
     }
 
     pub fn remove(&mut self, id: Id) {
-        self.values.remove(&id)
+        self.values.remove(&id);
     }
 
     pub fn get(&self, id: Id) -> &T {

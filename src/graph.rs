@@ -1,4 +1,6 @@
 mod node;
+pub use node::Node;
+
 use crate::utils::Id;
 
 struct Connection {
