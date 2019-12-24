@@ -1,53 +1,51 @@
-mod plugin;
-pub use plugin::Plugin;
+mod plugins;
+pub use plugins::*;
 
 mod desc;
-pub use desc::Desc;
+pub use desc::*;
 
-mod builtin;
+pub(self) mod builtin;
 
-use std::collections::HashMap;
+use crate::control::Control;
+use crate::image::{self, Image};
+use crate::plugin;
 
-type PluginMap = HashMap<String, Plugin>;
+type ImageDescFunc = fn(&[Control]) -> image::Desc;
+type RenderFunc = fn(&[Control], &mut Image);
+type PlugDesc = &'static plugin::Desc;
 
-pub struct PluginsBuilder {
-    plugins: PluginMap,
+pub struct Plugin {
+    pub desc: PlugDesc,
+    image_desc_func: ImageDescFunc,
+    render_func: RenderFunc,
 }
 
-impl PluginsBuilder {
-    pub fn new() -> Self {
+impl Plugin {
+    pub const fn new(
+        desc: PlugDesc,
+        image_desc_func: ImageDescFunc,
+        render_func: RenderFunc,
+    ) -> Self {
         Self {
-            plugins: HashMap::new(),
+            desc,
+            image_desc_func,
+            render_func,
         }
     }
 
-    pub fn with_plugin(mut self, plugin: Plugin) -> Self {
-        let key = plugin.desc.name.into();
-        self.plugins.insert(key, plugin);
-        self
+    pub fn controls(&self) -> Vec<Control> {
+        let mut out = Vec::new();
+        for desc in self.desc.controls {
+            out.push(Control::from(&desc.kind));
+        }
+        out
     }
 
-    pub fn build(self) -> Plugins {
-        Plugins::new(self.plugins)
-    }
-}
-
-impl Default for PluginsBuilder {
-    fn default() -> Self {
-        Self::new().with_plugin(builtin::uv_texture::PLUGIN)
-    }
-}
-
-pub struct Plugins {
-    plugins: PluginMap,
-}
-
-impl Plugins {
-    pub(self) fn new(plugins: PluginMap) -> Self {
-        Self { plugins }
+    pub fn image_desc(&self, controls: &[Control]) -> image::Desc {
+        (self.image_desc_func)(controls)
     }
 
-    pub fn get(&self, name: &str) -> Option<&Plugin> {
-        self.plugins.get(name)
+    pub fn render(&self, controls: &[Control], image: &mut Image) {
+        (self.render_func)(controls, image)
     }
 }
