@@ -1,7 +1,5 @@
-use madeline::graph::Graph;
-use madeline::plugins;
+use madeline::plugin::PluginsBuilder;
 
 fn main() {
-    let mut graph = Graph::new();
-    graph.plugins.add(plugins::uv_texture::create());
+    let plugins = PluginsBuilder::default().build();
 }

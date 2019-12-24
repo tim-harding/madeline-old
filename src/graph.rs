@@ -1,19 +1,24 @@
-pub mod node;
-pub mod plugin;
+mod node;
 
-pub use node::{Node, Nodes};
-pub use plugin::{Plugin, Plugins};
+struct Connection {
+    pub from: node::Id,
+    pub to: node::Id,
+}
+
+impl Connection {
+    pub fn new(from: node::Id, to: node::Id) -> Self {
+        Self { from, to }
+    }
+}
 
 pub struct Graph {
-    pub nodes: Nodes,
-    pub plugins: Plugins,
+    connections: Vec<Connection>,
 }
 
 impl Graph {
     pub fn new() -> Self {
         Self {
-            nodes: Nodes::new(),
-            plugins: Plugins::new(),
+            connections: Vec::new(),
         }
     }
 }

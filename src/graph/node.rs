@@ -1,36 +1,25 @@
-use super::plugin::{Control, Plugin, PluginId};
-use crate::image::Image;
-use crate::utils::Vector2;
+use crate::plugin::Plugin;
 use std::collections::HashMap;
 
-pub type NodeId = usize;
-
-pub struct Node {
-    pub plugin: PluginId,
-    pub position: Vector2,
-    pub inputs: Vec<NodeId>,
-    pub cache: Option<Image>,
-    pub controls: Vec<Control>,
+pub struct Node<'a> {
+    plugin: &'a Plugin,
 }
 
-impl Node {
-    pub fn new(plugin: &Plugin, plugin_id: PluginId) -> Self {
-        Self {
-            plugin: plugin_id,
-            position: Vector2::default(),
-            inputs: Vec::new(),
-            cache: None,
-            controls: plugin.controls(),
-        }
+impl<'a> Node<'a> {
+    // Whoever creates this should also create its controls
+    pub fn new(plugin: &'a Plugin) -> Self {
+        Self { plugin }
     }
 }
 
-pub struct Nodes {
-    next_index: usize,
-    nodes: HashMap<usize, Node>,
+pub type Id = usize;
+
+pub struct Nodes<'a> {
+    next_index: Id,
+    nodes: HashMap<Id, Node<'a>>,
 }
 
-impl Nodes {
+impl<'a> Nodes<'a> {
     pub fn new() -> Self {
         Self {
             next_index: 0,
@@ -38,7 +27,7 @@ impl Nodes {
         }
     }
 
-    pub fn insert(&mut self, node: Node) {
+    pub fn insert(&mut self, node: Node<'a>) {
         self.next_index += 1;
         self.nodes.insert(self.next_index, node);
     }
