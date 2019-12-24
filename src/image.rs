@@ -1,36 +1,35 @@
 mod channel;
-pub use channel::Channel;
+pub use channel::{Channel, Color};
+
+mod desc;
+pub use desc::{Desc, Format};
+
+use crate::utils::Vector2Int;
 
 mod loading;
 
-pub struct Desc {
-    pub width: usize,
-    pub height: usize,
-    pub channels: usize,
-}
-
-impl Desc {
-    pub fn new(width: usize, height: usize, channels: usize) -> Self {
-        Self {
-            width,
-            height,
-            channels,
-        }
-    }
-}
-
 pub struct Image {
-    pub desc: Desc,
-    channels: Vec<Channel>,
+    size: Vector2Int,
+    color: Color,
 }
 
 impl Image {
-    pub fn from_desc(desc: Desc) -> Image {
-        let mut channels = Vec::with_capacity(desc.channels);
-        for _ in 0..desc.channels {
-            channels.push(Channel::new(desc.width, desc.height));
+    pub fn new(size: Vector2Int, color: Color) -> Self {
+        Self {
+            size,
+            color,
         }
+    }
 
-        Image { desc, channels }
+    pub fn width(&self) -> usize {
+        self.size.x
+    }
+
+    pub fn height(&self) -> usize {
+        self.size.y
+    }
+
+    pub fn channels(&self) -> &Color {
+        &self.color
     }
 }

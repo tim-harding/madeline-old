@@ -8,10 +8,14 @@ pub struct PluginsBuilder {
 }
 
 impl PluginsBuilder {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             plugins: HashMap::new(),
         }
+    }
+
+    pub fn builtin() -> Self {
+        Self::new().with_plugin(builtin::uv_texture::PLUGIN)
     }
 
     pub fn with_plugin(mut self, plugin: Plugin) -> Self {
@@ -22,12 +26,6 @@ impl PluginsBuilder {
 
     pub fn build(self) -> Plugins {
         Plugins::new(self.plugins)
-    }
-}
-
-impl Default for PluginsBuilder {
-    fn default() -> Self {
-        Self::new().with_plugin(builtin::uv_texture::PLUGIN)
     }
 }
 

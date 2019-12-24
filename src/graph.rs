@@ -1,12 +1,13 @@
 mod node;
+use crate::utils::Id;
 
 struct Connection {
-    pub from: node::Id,
-    pub to: node::Id,
+    pub from: Id,
+    pub to: Id,
 }
 
 impl Connection {
-    pub fn new(from: node::Id, to: node::Id) -> Self {
+    pub fn new(from: Id, to: Id) -> Self {
         Self { from, to }
     }
 }

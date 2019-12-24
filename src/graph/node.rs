@@ -1,4 +1,5 @@
 use crate::plugin::Plugin;
+use crate::utils::Id;
 use std::collections::HashMap;
 
 pub struct Node<'a> {
@@ -11,8 +12,6 @@ impl<'a> Node<'a> {
         Self { plugin }
     }
 }
-
-pub type Id = usize;
 
 pub struct Nodes<'a> {
     next_index: Id,

@@ -1,5 +1,5 @@
 use madeline::plugin::PluginsBuilder;
 
 fn main() {
-    let plugins = PluginsBuilder::default().build();
+    let plugins = PluginsBuilder::builtin().build();
 }

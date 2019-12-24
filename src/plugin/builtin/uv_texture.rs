@@ -1,6 +1,7 @@
 use crate::control::{self, Control};
 use crate::image::{self, Image};
 use crate::plugin::{self, Plugin};
+use crate::utils::Vector2Int;
 
 enum Property {
     Width,
@@ -20,7 +21,8 @@ pub const PLUGIN: Plugin = Plugin::new(&DESC, image_desc, render);
 fn image_desc(controls: &[Control]) -> image::Desc {
     let w = controls[Property::Width as usize].as_int();
     let h = controls[Property::Height as usize].as_int();
-    image::Desc::new(w, h, 4)
+    let size = Vector2Int::new(w, h);
+    image::Desc::new(size, image::Format::Rg)
 }
 
 fn render(_: &[Control], out: &mut Image) {
