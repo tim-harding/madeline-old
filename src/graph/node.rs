@@ -1,6 +1,6 @@
 use crate::plugin::Plugin;
-use crate::utils::Id;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Node<'a> {
     plugin: &'a Plugin,
 }

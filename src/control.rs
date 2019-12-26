@@ -1,20 +1,31 @@
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Kind {
     Integer,
     Float,
     Text,
 }
 
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {
-    pub name: &'static str,
-    pub kind: Kind,
+    name: &'static str,
+    kind: Kind,
 }
 
 impl Desc {
     pub const fn new(name: &'static str, kind: Kind) -> Self {
         Self { name, kind }
     }
+
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
+    pub fn kind(&self) -> Kind {
+        self.kind
+    }
 }
 
+#[derive(PartialEq, Clone, Debug)]
 pub enum Control {
     Integer(usize),
     Float(f32),

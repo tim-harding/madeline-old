@@ -19,7 +19,7 @@ impl PluginsBuilder {
     }
 
     pub fn with_plugin(mut self, plugin: Plugin) -> Self {
-        let key = plugin.desc.name.into();
+        let key = plugin.desc.name().into();
         self.plugins.insert(key, plugin);
         self
     }

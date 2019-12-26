@@ -1,14 +1,15 @@
 mod color;
 pub use color::Color;
 
-use crate::utils::Vector2Int;
+use crate::utils::Vec2I;
 
+#[derive(Clone, Debug)]
 pub struct Channel {
     pixels: Vec<f32>,
 }
 
 impl Channel {
-    pub fn new(size: Vector2Int) -> Channel {
+    pub fn new(size: Vec2I) -> Channel {
         let count = size.x * size.y;
         let mut pixels = Vec::with_capacity(count);
         pixels.resize(count, 0.0);

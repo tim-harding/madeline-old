@@ -1,14 +1,14 @@
-pub struct Vector2 {
-    pub x: f32,
-    pub y: f32,
+#[derive(Eq, PartialEq, Default, Copy, Clone, Debug)]
+pub struct Vec2Base<T> {
+    pub x: T,
+    pub y: T,
 }
 
-impl Vector2 {
-    pub fn new(x: f32, y: f32) -> Self {
+impl<T> Vec2Base<T> {
+    pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
-
-    pub fn default() -> Self {
-        Self::new(0.0, 0.0)
-    }
 }
+
+pub type Vec2I = Vec2Base<usize>;
+pub type Vec2 = Vec2Base<f32>;
