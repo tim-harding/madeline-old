@@ -4,7 +4,7 @@ use crate::utils::Vec2I;
 use crate::image::{self, Image};
 
 const NAME: &'static str = "UV";
-const INPUTS: [Input; 0] = [];
+const INPUTS: [&'static str; 0] = [];
 const CONTROLS: [control::Desc; 2] = [
     control::Desc::new("Width", control::Kind::Integer),
     control::Desc::new("Height", control::Kind::Integer),
@@ -20,7 +20,7 @@ impl Uv {
 }
 
 impl Plugin for Uv {
-    fn render(&self) -> Image {
+    fn render(&self, _: Inputs) -> Result<Image, String> {
         let size = Vec2I::new(1024, 1024);
         let desc = image::Desc::new(size, 2);
         let mut out = Image::from_desc(desc);
@@ -32,7 +32,7 @@ impl Plugin for Uv {
                 pixel[1] = (y as f32) / height;
             }
         }
-        out
+        Ok(out)
     }
 
     fn desc(&self) -> &'static plugin::Desc {

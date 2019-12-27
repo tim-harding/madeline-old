@@ -2,18 +2,7 @@ use crate::control::{self, Control};
 
 type Name = &'static str;
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct Input {
-    pub name: Name,
-}
-
-impl Input {
-    pub fn new(name: Name) -> Self {
-        Self { name }
-    }
-}
-
-type Inputs = &'static [Input];
+type Inputs = &'static [&'static str];
 type Controls = &'static [control::Desc];
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]

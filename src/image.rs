@@ -15,8 +15,8 @@ impl Desc {
 
 #[derive(Clone, Debug)]
 pub struct Image {
-    pub(self) desc: Desc,
-    pub(self) pixels: Vec<f32>,
+    desc: Desc,
+    pixels: Vec<f32>,
 }
 
 impl Image {
@@ -25,6 +25,10 @@ impl Image {
         let mut pixels = Vec::with_capacity(count);
         pixels.resize(count, 0.0);
         Self { desc, pixels }
+    }
+
+    pub fn desc(&self) -> Desc {
+        self.desc
     }
 
     pub fn pixels(&self) -> PixelIter {

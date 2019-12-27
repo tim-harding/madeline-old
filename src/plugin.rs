@@ -9,7 +9,9 @@ mod builtin;
 use crate::plugin;
 use crate::image::Image;
 
+pub type Inputs<'a> = &'a [Option<&'a Image>];
+
 pub trait Plugin {
-    fn render(&self) -> Image;
+    fn render(&self, inputs: Inputs) -> Result<Image, String>;
     fn desc(&self) -> &'static plugin::Desc;
 }
