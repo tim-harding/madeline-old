@@ -1,22 +1,17 @@
-mod channel;
-pub use channel::{Channel, Color};
-
-mod desc;
-pub use desc::{Desc, Format};
-
 use crate::utils::Vec2I;
 
-mod loading;
-
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct Image {
+pub struct ImageInfo {
     size: Vec2I,
-    color: Color,
+    pixels: Vec<f32>,
 }
 
 impl Image {
-    pub fn new(size: Vec2I, color: Color) -> Self {
-        Self { size, color }
+    pub fn new(size: Vec2I) -> Self {
+        let count = size.x * size.y * 4;
+        let mut pixels = Vec::with_capacity(count);
+        pixels.resize(count, 0);
+        Self { size, pixels }
     }
 
     pub fn width(&self) -> usize {
@@ -25,9 +20,5 @@ impl Image {
 
     pub fn height(&self) -> usize {
         self.size.y
-    }
-
-    pub fn channels(&self) -> &Color {
-        &self.color
     }
 }

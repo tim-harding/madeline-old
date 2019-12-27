@@ -7,7 +7,6 @@ use std::collections::{hash_map::Entry::*, hash_set, HashMap, HashSet};
 #[derive(Clone)]
 pub struct Graph {
     inputs: HashMap<Id, HashSet<Id>>,
-    viewing: Id,
 }
 
 impl Graph {
@@ -44,11 +43,12 @@ impl Graph {
         self.inputs.get(&from).map(|set| set.iter())
     }
 
-    pub fn viewing(&self) -> Id {
-        self.viewing
-    }
-
-    pub fn set_viewing(&mut self, id: Id) {
-        self.viewing = id
+    pub fn render(&self, id: Id, images: &mut Table<Id, Image>) -> Image {
+        let mut stack = Vec::new();
+        stack.push(id);
+        while !stack.is_empty() {
+            let next = stack.pop();
+            for 
+        }
     }
 }

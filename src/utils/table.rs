@@ -3,14 +3,16 @@ use std::collections::HashMap;
 
 pub struct Table<T> {
     next_id: Id,
-    values: HashMap<Id, T>,
+    ids: Vec<Id>,
+    values: Vec<T>,
 }
 
 impl<T> Table<T> {
     pub fn new() -> Self {
         Self {
             next_id: 0,
-            values: HashMap::new(),
+            ids: Vec::new(),
+            values: Vec::new(),
         }
     }
 
@@ -21,22 +23,36 @@ impl<T> Table<T> {
     }
 
     pub fn remove(&mut self, id: Id) {
-        self.values.remove(&id);
+        match self.ids.as_slice().binary_search(id) {
+            Ok(index) => {
+                self.ids.remove(index);
+                self.values.remove(index);
+            },
+            Err(_) => { },
+        }
     }
 
-    pub fn get(&self, id: Id) -> &T {
+    pub fn get(&self, id: Id) -> Option<&T> {
         let value = self.values.get(&id);
-        match value {
-            Some(value) => value,
-            None => unreachable!(),
+        match self.ids.as_slice().binary_search(id) {
+            Ok(index) => Some(&self.values[index]),
+            Err(_) => None,
         }
     }
 
-    pub fn get_mut(&mut self, id: Id) -> &mut T {
-        let value = self.values.get_mut(&id);
-        match value {
-            Some(value) => value,
-            None => unreachable!(),
+    pub fn get_mut(&mut self, id: Id) -> Option<&mut T> {
+        let value = self.values.get(&id);
+        match self.ids.as_slice().binary_search(id) {
+            Ok(index) => Some(&mut self.values[index]),
+            Err(_) => None,
         }
+    }
+
+    pub fn iter(&self) {
+        self.values.iter()
+    }
+
+    pub fn iter_mut(&mut self) {
+        self.values.iter_mut()
     }
 }
