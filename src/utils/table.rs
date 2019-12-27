@@ -1,5 +1,5 @@
 use super::Id;
-use std::collections::HashMap;
+use std::slice::{Iter, IterMut};
 
 pub struct Table<T> {
     next_id: Id,
@@ -23,7 +23,7 @@ impl<T> Table<T> {
     }
 
     pub fn remove(&mut self, id: Id) {
-        match self.ids.as_slice().binary_search(id) {
+        match self.ids.as_slice().binary_search(&id) {
             Ok(index) => {
                 self.ids.remove(index);
                 self.values.remove(index);
@@ -33,26 +33,26 @@ impl<T> Table<T> {
     }
 
     pub fn get(&self, id: Id) -> Option<&T> {
-        let value = self.values.get(&id);
-        match self.ids.as_slice().binary_search(id) {
+        let value = self.values.get(id);
+        match self.ids.as_slice().binary_search(&id) {
             Ok(index) => Some(&self.values[index]),
             Err(_) => None,
         }
     }
 
     pub fn get_mut(&mut self, id: Id) -> Option<&mut T> {
-        let value = self.values.get(&id);
-        match self.ids.as_slice().binary_search(id) {
+        let value = self.values.get(id);
+        match self.ids.as_slice().binary_search(&id) {
             Ok(index) => Some(&mut self.values[index]),
             Err(_) => None,
         }
     }
 
-    pub fn iter(&self) {
+    pub fn iter(&self) -> Iter<T> {
         self.values.iter()
     }
 
-    pub fn iter_mut(&mut self) {
+    pub fn iter_mut(&mut self) -> IterMut<T> {
         self.values.iter_mut()
     }
 }

@@ -1,25 +1,15 @@
-use crate::control;
-use crate::image::Format;
+use crate::control::{self, Control};
 
 type Name = &'static str;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Input {
-    name: Name,
-    format: Format,
+    pub name: Name,
 }
 
 impl Input {
-    pub fn new(name: Name, format: Format) -> Self {
-        Self { name, format }
-    }
-
-    pub fn name(&self) -> Name {
-        self.name
-    }
-
-    pub fn format(&self) -> Format {
-        self.format
+    pub fn new(name: Name) -> Self {
+        Self { name }
     }
 }
 
@@ -28,9 +18,9 @@ type Controls = &'static [control::Desc];
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {
-    name: Name,
-    inputs: Inputs,
-    controls: Controls,
+    pub name: Name,
+    pub inputs: Inputs,
+    control_descs: Controls,
 }
 
 impl Desc {
@@ -38,19 +28,15 @@ impl Desc {
         Self {
             name,
             inputs,
-            controls,
+            control_descs: controls,
         }
     }
 
-    pub fn name(&self) -> Name {
-        self.name
-    }
-
-    pub fn inputs(&self) -> Inputs {
-        self.inputs
-    }
-
-    pub fn controls(&self) -> Controls {
-        self.controls
+    pub fn controls(&self) -> Vec<Control> {
+        let mut out = Vec::new();
+        for desc in self.control_descs.iter() {
+            out.push(Control::from(&desc.kind()));
+        }
+        out
     }
 }

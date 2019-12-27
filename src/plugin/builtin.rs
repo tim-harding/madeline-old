@@ -1,1 +1,2 @@
-pub mod uv_texture;
+mod uv_texture;
+pub use uv_texture::Uv;

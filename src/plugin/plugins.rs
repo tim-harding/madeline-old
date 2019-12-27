@@ -1,7 +1,7 @@
 use super::{builtin, Plugin};
 use std::collections::HashMap;
 
-type PluginMap = HashMap<String, Plugin>;
+type PluginMap = HashMap<String, Box<dyn Plugin>>;
 
 pub struct PluginsBuilder {
     plugins: PluginMap,
@@ -15,11 +15,11 @@ impl PluginsBuilder {
     }
 
     pub fn builtin() -> Self {
-        Self::new().with_plugin(builtin::uv_texture::PLUGIN)
+        Self::new().with_plugin(Box::new(builtin::Uv::new()))
     }
 
-    pub fn with_plugin(mut self, plugin: Plugin) -> Self {
-        let key = plugin.desc.name().into();
+    pub fn with_plugin(mut self, plugin: Box<dyn Plugin>) -> Self {
+        let key = plugin.desc().name.into();
         self.plugins.insert(key, plugin);
         self
     }
@@ -38,7 +38,7 @@ impl Plugins {
         Self { plugins }
     }
 
-    pub fn get(&self, name: &str) -> Option<&Plugin> {
+    pub fn get(&self, name: &str) -> Option<&Box<dyn Plugin>> {
         self.plugins.get(name)
     }
 }

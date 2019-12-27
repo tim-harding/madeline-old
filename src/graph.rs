@@ -13,7 +13,6 @@ impl Graph {
     pub fn new() -> Self {
         Self {
             inputs: HashMap::new(),
-            viewing: 0,
         }
     }
 
@@ -41,14 +40,5 @@ impl Graph {
 
     pub fn iter(&self, from: Id) -> Option<hash_set::Iter<Id>> {
         self.inputs.get(&from).map(|set| set.iter())
-    }
-
-    pub fn render(&self, id: Id, images: &mut Table<Id, Image>) -> Image {
-        let mut stack = Vec::new();
-        stack.push(id);
-        while !stack.is_empty() {
-            let next = stack.pop();
-            for 
-        }
     }
 }
