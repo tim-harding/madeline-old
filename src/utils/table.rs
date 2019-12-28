@@ -27,8 +27,8 @@ impl<T> Table<T> {
             Ok(index) => {
                 self.ids.remove(index);
                 self.values.remove(index);
-            },
-            Err(_) => { },
+            }
+            Err(_) => {}
         }
     }
 

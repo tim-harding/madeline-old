@@ -1,19 +1,18 @@
 use crate::image::{self, Image};
-use std::io;
-use std::fs::File;
 use crate::utils::Vec2I;
-use ::png::{OutputInfo, Decoder, ColorType::*};
+use ::png::{BitDepth, ColorType, Decoder, OutputInfo};
+use std::fs::File;
+use std::io::{self, BufWriter};
 
 pub fn load(file: &File) -> Result<Image, String> {
     let (img_data, info) = extract(file).map_err(|e| format!("{}", e))?;
     let channel_count = match info.color_type {
-        Grayscale => 1,
-        GrayscaleAlpha => 2,
-        RGB => 3,
-        RGBA => 4,
-        
-        // TODO: Translate indexed colors
-        Indexed => {
+        ColorType::Grayscale => 1,
+        ColorType::GrayscaleAlpha => 2,
+        ColorType::RGB => 3,
+        ColorType::RGBA => 4,
+        ColorType::Indexed => {
+            // TODO: Translate indexed colors
             return Err("Indexed PNG encoding not supported.".to_string());
         }
     };
@@ -40,4 +39,25 @@ fn extract(file: &File) -> io::Result<(Vec<u8>, OutputInfo)> {
     let mut img_data = vec![0; info.buffer_size()];
     reader.next_frame(&mut img_data)?;
     Ok((img_data, info))
+}
+
+pub fn save(file: &File, image: &Image) -> Result<(), String> {
+    let size = image.desc().size;
+    let x = size.x as u32;
+    let y = size.y as u32;
+
+    let ref mut writer = BufWriter::new(file);
+    let mut encoder = png::Encoder::new(writer, x, y);
+    encoder.set_color(ColorType::RGBA);
+    encoder.set_depth(BitDepth::Eight);
+    let mut writer = encoder.write_header().map_err(|e| format!("{}", e))?;
+
+    let data = image
+        .pixels()
+        .flat_map(|px| px.iter())
+        .map(|c| (*c * 255.0) as u8)
+        .collect::<Vec<u8>>();
+    writer
+        .write_image_data(data.as_slice())
+        .map_err(|e| format!("{}", e))
 }

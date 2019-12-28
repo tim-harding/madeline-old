@@ -1,20 +1,17 @@
 use crate::control;
-use crate::plugin::{self, *};
 use crate::image::Image;
+use crate::plugin::{self, *};
 
 const NAME: &'static str = "Multiply";
-const INPUTS: [&'static str; 2] = [
-    "bg",
-    "fg",
-];
+const INPUTS: [&'static str; 2] = ["bg", "fg"];
 const CONTROLS: [control::Desc; 0] = [];
 const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
 
-pub struct Multiply { }
+pub struct Multiply {}
 
 impl Multiply {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 }
 
@@ -29,7 +26,7 @@ impl Plugin for Multiply {
             Some(fg) => fg,
             None => return Err(String::from("Invalid foreground input")),
         };
-        
+
         if bg.desc() != fg.desc() {
             return Err(String::from("Non-matching inputs."));
         }

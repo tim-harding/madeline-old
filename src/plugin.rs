@@ -4,10 +4,10 @@ pub use plugins::*;
 mod desc;
 pub use desc::*;
 
-mod builtin;
+pub mod builtin;
 
-use crate::plugin;
 use crate::image::Image;
+use crate::plugin;
 
 pub type Inputs<'a> = &'a [Option<&'a Image>];
 

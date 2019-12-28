@@ -1,7 +1,7 @@
 use crate::control;
+use crate::image::{self, Image};
 use crate::plugin::{self, *};
 use crate::utils::Vec2I;
-use crate::image::{self, Image};
 
 const NAME: &'static str = "UV";
 const INPUTS: [&'static str; 0] = [];
@@ -11,11 +11,11 @@ const CONTROLS: [control::Desc; 2] = [
 ];
 const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
 
-pub struct Uv { }
+pub struct Uv {}
 
 impl Uv {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 }
 

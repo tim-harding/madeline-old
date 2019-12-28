@@ -44,7 +44,11 @@ impl Image {
     }
 
     pub fn lines_mut(&mut self) -> LineIterMut {
-        LineIterMut::new(self.desc.size.x, self.desc.channels, self.pixels.as_mut_slice())
+        LineIterMut::new(
+            self.desc.size.x,
+            self.desc.channels,
+            self.pixels.as_mut_slice(),
+        )
     }
 }
 
@@ -58,13 +62,12 @@ impl<'a> Iterator for LineIter<'a> {
     type Item = PixelIter<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining.is_empty() {
+            return None;
+        }
         let (next, remaining) = self.remaining.split_at(self.line_length);
         self.remaining = remaining;
-        if !next.is_empty() {
-            Some(PixelIter::new(self.channels, next))
-        } else {
-            None
-        }
+        Some(PixelIter::new(self.channels, next))
     }
 }
 
@@ -90,7 +93,7 @@ impl<'a> Iterator for LineIterMut<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let slice = mem::replace(&mut self.remaining, &mut []);
         if slice.is_empty() {
-            return None
+            return None;
         }
         let (next, remaining) = slice.split_at_mut(self.line_length);
         self.remaining = remaining;
@@ -124,15 +127,14 @@ impl<'a> PixelIter<'a> {
 
 impl<'a> Iterator for PixelIter<'a> {
     type Item = &'a [f32];
-    
+
     fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining.is_empty() {
+            return None;
+        }
         let (next, remaining) = self.remaining.split_at(self.channels);
         self.remaining = remaining;
-        if !next.is_empty() {
-            Some(next)
-        } else {
-            None
-        }
+        Some(next)
     }
 }
 
@@ -152,7 +154,7 @@ impl<'a> PixelIterMut<'a> {
 
 impl<'a> Iterator for PixelIterMut<'a> {
     type Item = &'a mut [f32];
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         let slice = mem::replace(&mut self.remaining, &mut []);
         if slice.is_empty() {

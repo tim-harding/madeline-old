@@ -4,7 +4,8 @@ pub use vector2::*;
 mod table;
 pub use table::Table;
 
-mod loading;
-pub use loading::load;
+pub mod io;
+
+pub mod test_images;
 
 pub type Id = usize;
