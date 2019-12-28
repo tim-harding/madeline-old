@@ -20,16 +20,13 @@ pub fn load(file: &File) -> Result<Image, String> {
     let size = Vec2I::new(info.width as usize, info.height as usize);
     let desc = image::Desc::new(size, channel_count);
     let mut image = Image::from_desc(desc);
-    for (y, line) in image.lines_mut().enumerate() {
-        for (x, pixel) in line.enumerate() {
-            let pixel_index = y * size.x + x;
-            let offset = pixel_index * channel_count;
-            for (i, channel) in pixel.iter_mut().enumerate() {
-                *channel = img_data[offset + i] as f32;
-            }
-        }
+    for (src, dst) in img_data
+        .iter()
+        .map(|e| (*e as f32) / 255.0)
+        .zip(image.elements_mut())
+    {
+        *dst = src;
     }
-
     Ok(image)
 }
 

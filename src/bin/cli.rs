@@ -1,5 +1,5 @@
-use madeline::utils::{test_images, io};
-use madeline::plugin::{Plugin, builtin::Multiply};
+use madeline::plugin::{builtin::Multiply, Plugin};
+use madeline::utils::{io, test_images};
 use std::path::Path;
 
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
                 Ok(_) => println!("Saved successfully"),
                 Err(e) => println!("{:?}", e),
             }
-        },
+        }
         Err(e) => println!("{:?}", e),
     }
 }

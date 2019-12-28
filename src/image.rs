@@ -1,5 +1,6 @@
 use crate::utils::Vec2I;
 use std::mem;
+use std::slice::{Iter, IterMut};
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {
@@ -49,6 +50,14 @@ impl Image {
             self.desc.channels,
             self.pixels.as_mut_slice(),
         )
+    }
+
+    pub fn elements(&self) -> Iter<f32> {
+        self.pixels.iter()
+    }
+
+    pub fn elements_mut(&mut self) -> IterMut<f32> {
+        self.pixels.iter_mut()
     }
 }
 
