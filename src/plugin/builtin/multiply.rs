@@ -2,7 +2,7 @@ use crate::control;
 use crate::image::Image;
 use crate::plugin::{self, *};
 
-const NAME: &'static str = "Multiply";
+const NAME: &'static str = "multiply";
 const INPUTS: [&'static str; 2] = ["bg", "fg"];
 const CONTROLS: [control::Desc; 0] = [];
 const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
@@ -16,7 +16,7 @@ impl Multiply {
 }
 
 impl Plugin for Multiply {
-    fn render(&self, inputs: Inputs) -> Result<Image, String> {
+    fn render(&mut self, inputs: Inputs, _: Controls) -> Result<Image, String> {
         let bg = match inputs[0] {
             Some(bg) => bg,
             None => return Err(String::from("Invalid background input")),
