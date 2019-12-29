@@ -1,15 +1,15 @@
-use crate::utils::Vec2I;
+use crate::utils::Vec2U;
 use std::mem;
 use std::slice::{Iter, IterMut};
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {
-    pub size: Vec2I,
+    pub size: Vec2U,
     pub channels: usize,
 }
 
 impl Desc {
-    pub fn new(size: Vec2I, channels: usize) -> Self {
+    pub fn new(size: Vec2U, channels: usize) -> Self {
         Self { size, channels }
     }
 }
@@ -58,6 +58,26 @@ impl Image {
 
     pub fn elements_mut(&mut self) -> IterMut<f32> {
         self.pixels.iter_mut()
+    }
+
+    pub fn set_pixel(&mut self, pos: Vec2U, value: &[f32]) {
+        let (start, end) = self.pixel_bounds(pos);
+        for (out, element) in self.pixels[start..end].iter_mut().zip(value) {
+            *out = *element;
+        }
+    }
+
+    pub fn pixel(&self, pos: Vec2U) -> &[f32] {
+        let (start, end) = self.pixel_bounds(pos);
+        &self.pixels[start..end]
+    }
+
+    fn pixel_bounds(&self, pos: Vec2U) -> (usize, usize) {
+        let pixels = pos.y * self.desc().size.x + pos.x;
+        let channels = self.desc().channels;
+        let start = pixels * channels;
+        let end = start + channels;
+        (start, end)
     }
 }
 

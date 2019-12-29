@@ -1,5 +1,5 @@
 use crate::image::{self, Image};
-use crate::utils::Vec2I;
+use crate::utils::Vec2U;
 use ::png::{BitDepth, ColorType, Decoder, OutputInfo};
 use std::fs::File;
 use std::io::{self, BufWriter};
@@ -17,7 +17,7 @@ pub fn load(file: &File) -> Result<Image, String> {
         }
     };
 
-    let size = Vec2I::new(info.width as usize, info.height as usize);
+    let size = Vec2U::new(info.width as usize, info.height as usize);
     let desc = image::Desc::new(size, channel_count);
     let mut image = Image::from_desc(desc);
     for (src, dst) in img_data

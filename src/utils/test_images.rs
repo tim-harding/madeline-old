@@ -1,7 +1,7 @@
 use crate::image::{self, Image};
-use crate::utils::Vec2I;
+use crate::utils::Vec2U;
 
-pub fn checker(size: Vec2I) -> Image {
+pub fn checker(size: Vec2U) -> Image {
     let desc = image::Desc::new(size, 4);
     let mut out = Image::from_desc(desc);
     for (y, line) in out.lines_mut().enumerate() {
@@ -20,7 +20,7 @@ pub fn checker(size: Vec2I) -> Image {
     out
 }
 
-pub fn solid_color(size: Vec2I, r: f32, g: f32, b: f32) -> Image {
+pub fn solid_color(size: Vec2U, r: f32, g: f32, b: f32) -> Image {
     let desc = image::Desc::new(size, 4);
     let mut out = Image::from_desc(desc);
     for line in out.lines_mut() {
