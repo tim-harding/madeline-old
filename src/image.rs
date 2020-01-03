@@ -1,5 +1,7 @@
-use crate::utils::Vec2U;
+use crate::utils::{Vec2I, Vec2U};
+use std::cmp::{max, min};
 use std::mem;
+use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
@@ -14,42 +16,22 @@ impl Desc {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Image {
-    desc: Desc,
+#[derive(Debug, Clone)]
+pub struct Channel {
+    size: Vec2U,
     pixels: Vec<f32>,
 }
 
-impl Image {
-    pub fn from_desc(desc: Desc) -> Self {
-        let count = desc.size.x * desc.size.y * desc.channels;
+impl Channel {
+    pub fn new(size: Vec2U) -> Self {
+        let count = size.area();
         let mut pixels = Vec::with_capacity(count);
         pixels.resize(count, 0.0);
-        Self { desc, pixels }
+        Self { size, pixels }
     }
 
-    pub fn desc(&self) -> Desc {
-        self.desc
-    }
-
-    pub fn pixels(&self) -> PixelIter {
-        PixelIter::new(self.desc.channels, self.pixels.as_slice())
-    }
-
-    pub fn pixels_mut(&mut self) -> PixelIterMut {
-        PixelIterMut::new(self.desc.channels, self.pixels.as_mut_slice())
-    }
-
-    pub fn lines(&self) -> LineIter {
-        LineIter::new(self.desc.size.x, self.desc.channels, self.pixels.as_slice())
-    }
-
-    pub fn lines_mut(&mut self) -> LineIterMut {
-        LineIterMut::new(
-            self.desc.size.x,
-            self.desc.channels,
-            self.pixels.as_mut_slice(),
-        )
+    pub fn size(&self) -> Vec2U {
+        self.size
     }
 
     pub fn elements(&self) -> Iter<f32> {
@@ -60,138 +42,166 @@ impl Image {
         self.pixels.iter_mut()
     }
 
-    pub fn set_pixel(&mut self, pos: Vec2U, value: &[f32]) {
-        let (start, end) = self.pixel_bounds(pos);
-        for (out, element) in self.pixels[start..end].iter_mut().zip(value) {
-            *out = *element;
+    pub fn element(&self, pos: Vec2I) -> f32 {
+        match self.index_of(pos) {
+            Some(i) => self.pixels[i],
+            None => 0.0,
         }
     }
 
-    pub fn pixel(&self, pos: Vec2U) -> &[f32] {
-        let (start, end) = self.pixel_bounds(pos);
-        &self.pixels[start..end]
+    pub fn set_element(&mut self, pos: Vec2I, value: f32) {
+        if let Some(i) = self.index_of(pos) {
+            self.pixels[i] = value;
+        }
     }
 
-    fn pixel_bounds(&self, pos: Vec2U) -> (usize, usize) {
-        let pixels = pos.y * self.desc().size.x + pos.x;
-        let channels = self.desc().channels;
-        let start = pixels * channels;
-        let end = start + channels;
-        (start, end)
+    fn index_of(&self, pos: Vec2I) -> Option<usize> {
+        let pos_u: Vec2U = pos.into();
+        if pos.x > 0 && pos.y > 0 && pos_u.x < self.size.x && pos_u.y < self.size.y {
+            Some(pos_u.y * self.size.x + pos_u.x)
+        } else {
+            None
+        }
+    }
+
+    pub fn raw(&self) -> &[f32] {
+        self.pixels.as_slice()
+    }
+
+    pub fn raw_mut(&mut self) -> &mut [f32] {
+        self.pixels.as_mut_slice()
+    }
+
+    pub fn lines(&self) -> LineIter {
+        LineIter::new(self)
+    }
+
+    pub fn lines_mut(&mut self) -> LineIterMut {
+        LineIterMut::new(self)
     }
 }
 
+impl Index<usize> for Channel {
+    type Output = f32;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        &self.pixels[i]
+    }
+}
+
+impl IndexMut<usize> for Channel {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        &mut self.pixels[i]
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct LineIter<'a> {
-    channels: usize,
-    line_length: usize,
     remaining: &'a [f32],
+    line_length: usize,
+}
+
+impl<'a> LineIter<'a> {
+    pub fn new(channel: &'a Channel) -> Self {
+        Self {
+            remaining: channel.raw(),
+            line_length: channel.size().x,
+        }
+    }
 }
 
 impl<'a> Iterator for LineIter<'a> {
-    type Item = PixelIter<'a>;
+    type Item = Iter<'a, f32>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.remaining.is_empty() {
             return None;
         }
-        let (next, remaining) = self.remaining.split_at(self.line_length);
-        self.remaining = remaining;
-        Some(PixelIter::new(self.channels, next))
-    }
-}
-
-impl<'a> LineIter<'a> {
-    pub fn new(width: usize, channels: usize, elements: &'a [f32]) -> Self {
-        Self {
-            channels,
-            line_length: channels * width,
-            remaining: elements,
-        }
+        let (head, tail) = self.remaining.split_at(self.line_length);
+        self.remaining = tail;
+        Some(head.iter())
     }
 }
 
 pub struct LineIterMut<'a> {
-    channels: usize,
-    line_length: usize,
     remaining: &'a mut [f32],
-}
-
-impl<'a> Iterator for LineIterMut<'a> {
-    type Item = PixelIterMut<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let slice = mem::replace(&mut self.remaining, &mut []);
-        if slice.is_empty() {
-            return None;
-        }
-        let (next, remaining) = slice.split_at_mut(self.line_length);
-        self.remaining = remaining;
-        Some(PixelIterMut::new(self.channels, next))
-    }
+    line_length: usize,
 }
 
 impl<'a> LineIterMut<'a> {
-    pub fn new(width: usize, channels: usize, elements: &'a mut [f32]) -> Self {
+    pub fn new(channel: &'a mut Channel) -> Self {
         Self {
-            channels,
-            line_length: channels * width,
-            remaining: elements,
+            line_length: channel.size().x,
+            remaining: channel.raw_mut(),
         }
     }
 }
 
-pub struct PixelIter<'a> {
-    channels: usize,
-    remaining: &'a [f32],
-}
-
-impl<'a> PixelIter<'a> {
-    pub fn new(channels: usize, elements: &'a [f32]) -> Self {
-        Self {
-            channels,
-            remaining: elements,
-        }
-    }
-}
-
-impl<'a> Iterator for PixelIter<'a> {
-    type Item = &'a [f32];
+impl<'a> Iterator for LineIterMut<'a> {
+    type Item = IterMut<'a, f32>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.remaining.is_empty() {
             return None;
         }
-        let (next, remaining) = self.remaining.split_at(self.channels);
-        self.remaining = remaining;
-        Some(next)
+
+        let remaining = mem::replace(&mut self.remaining, &mut []);
+        let (head, tail) = remaining.split_at_mut(self.line_length);
+        self.remaining = tail;
+        Some(head.iter_mut())
     }
 }
 
-pub struct PixelIterMut<'a> {
-    channels: usize,
-    remaining: &'a mut [f32],
+#[derive(Debug, Clone)]
+pub struct Image {
+    channels: Vec<Channel>,
 }
 
-impl<'a> PixelIterMut<'a> {
-    pub fn new(channels: usize, elements: &'a mut [f32]) -> Self {
-        Self {
-            channels,
-            remaining: elements,
+impl Image {
+    pub fn from_desc(desc: Desc) -> Self {
+        let mut channels = Vec::with_capacity(desc.channels);
+        for _ in 0..desc.channels {
+            channels.push(Channel::new(desc.size));
         }
+        Self { channels }
+    }
+
+    pub fn size(&self) -> Vec2U {
+        self.channels[0].size()
+    }
+
+    pub fn channel_count(&self) -> usize {
+        self.channels.len()
+    }
+
+    pub fn desc(&self) -> Desc {
+        Desc::new(self.size(), self.channel_count())
+    }
+
+    pub fn channels(&self) -> Iter<Channel> {
+        self.channels.iter()
+    }
+
+    pub fn channels_mut(&mut self) -> IterMut<Channel> {
+        self.channels.iter_mut()
+    }
+
+    pub fn resize(&mut self, channel_count: usize) {
+        self.channels
+            .resize(channel_count, Channel::new(self.size()))
     }
 }
 
-impl<'a> Iterator for PixelIterMut<'a> {
-    type Item = &'a mut [f32];
+impl Index<usize> for Image {
+    type Output = Channel;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let slice = mem::replace(&mut self.remaining, &mut []);
-        if slice.is_empty() {
-            return None;
-        }
+    fn index(&self, i: usize) -> &Self::Output {
+        &self.channels[i]
+    }
+}
 
-        let (next, remaining) = slice.split_at_mut(self.channels);
-        self.remaining = remaining;
-        Some(next)
+impl IndexMut<usize> for Image {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        &mut self.channels[i]
     }
 }

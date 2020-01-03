@@ -1,5 +1,5 @@
 use crate::image::{self, Image};
-use crate::utils::Vec2U;
+use crate::utils::{Vec2U, Vec2I};
 use ::png::{BitDepth, ColorType, Decoder, OutputInfo};
 use std::fs::File;
 use std::io::{self, BufWriter};
@@ -20,12 +20,17 @@ pub fn load(file: &File) -> Result<Image, String> {
     let size = Vec2U::new(info.width as usize, info.height as usize);
     let desc = image::Desc::new(size, channel_count);
     let mut image = Image::from_desc(desc);
-    for (src, dst) in img_data
-        .iter()
-        .map(|e| (*e as f32) / 255.0)
-        .zip(image.elements_mut())
-    {
-        *dst = src;
+    for y in 0..size.y {
+        for x in 0..size.x {
+            let start = (y * size.x + x) * channel_count;
+            let end = start + channel_count;
+            let pixel = &img_data[start..end];
+            for (i, channel) in pixel.iter().enumerate() {
+                let value = *channel as f32 / 255.0;
+                let pos: Vec2I = Vec2U::new(x, y).into();
+                image[i].set_element(pos, value);
+            }
+        }
     }
     Ok(image)
 }
@@ -49,11 +54,16 @@ pub fn save(file: &File, image: &Image) -> Result<(), String> {
     encoder.set_depth(BitDepth::Eight);
     let mut writer = encoder.write_header().map_err(|e| format!("{}", e))?;
 
-    let data = image
-        .pixels()
-        .flat_map(|px| px.iter())
-        .map(|c| (*c * 255.0) as u8)
-        .collect::<Vec<u8>>();
+    let element_count = size.area() * image.channel_count();
+    let mut data = Vec::with_capacity(element_count);
+    data.resize(element_count, 0);
+    for (channel_i, channel) in image.channels().enumerate() {
+        for (element_i, element) in channel.elements().enumerate() {
+            let i = element_i * image.channel_count() + channel_i;
+            data[i] = (*element * 255.0) as u8;
+        }
+    }
+
     writer
         .write_image_data(data.as_slice())
         .map_err(|e| format!("{}", e))

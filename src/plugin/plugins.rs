@@ -16,8 +16,8 @@ impl PluginsBuilder {
 
     pub fn builtin() -> Self {
         Self::new()
-            .with_plugin(Box::new(builtin::Multiply::new()))
             .with_plugin(Box::new(builtin::Loader::new()))
+            .with_plugin(Box::new(builtin::Merge::new()))
     }
 
     pub fn with_plugin(mut self, plugin: Box<dyn Plugin>) -> Self {

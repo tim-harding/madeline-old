@@ -32,7 +32,10 @@ impl Plugin for Loader {
         let path = PathBuf::from(controls[Parameters::Filename as usize].as_str());
         match self.images.entry(path.clone()) {
             Occupied(entry) => Ok(entry.get().clone()),
-            Vacant(_) => io::load(&path),
+            Vacant(entry) => io::load(&path).and_then(|image| {
+                let image = entry.insert(image);
+                Ok(image.clone())
+            }),
         }
     }
 
