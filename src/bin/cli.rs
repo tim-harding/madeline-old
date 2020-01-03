@@ -15,8 +15,8 @@ fn main() {
 }
 
 fn render() -> Result<(), String> {
-    let mut loader = Loader::new();
-    let mut merge = Merge::new();
+    let mut loader = Loader::default();
+    let mut merge = Merge::default();
 
     let kitty = {
         let inputs: Vec<Option<&Image>> = vec![];

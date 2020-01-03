@@ -48,15 +48,14 @@ pub fn save(file: &File, image: &Image) -> Result<(), String> {
     let x = size.x as u32;
     let y = size.y as u32;
 
-    let ref mut writer = BufWriter::new(file);
+    let writer = &mut BufWriter::new(file);
     let mut encoder = png::Encoder::new(writer, x, y);
     encoder.set_color(ColorType::RGBA);
     encoder.set_depth(BitDepth::Eight);
     let mut writer = encoder.write_header().map_err(|e| format!("{}", e))?;
 
     let element_count = size.area() * image.channel_count();
-    let mut data = Vec::with_capacity(element_count);
-    data.resize(element_count, 0);
+    let mut data = vec![0; element_count];
     for (channel_i, channel) in image.channels().enumerate() {
         for (element_i, element) in channel.elements().enumerate() {
             let i = element_i * image.channel_count() + channel_i;

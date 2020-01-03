@@ -120,7 +120,7 @@ where
 }
 
 impl Vec2F {
-    pub fn length(&self) -> f32 {
+    pub fn length(self) -> f32 {
         self.length2().sqrt()
     }
 }

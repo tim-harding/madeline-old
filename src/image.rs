@@ -1,5 +1,4 @@
 use crate::utils::{Vec2I, Vec2U};
-use std::cmp::{max, min};
 use std::mem;
 use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};

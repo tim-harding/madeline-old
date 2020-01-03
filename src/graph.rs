@@ -4,18 +4,12 @@ pub use node::Node;
 use crate::utils::Id;
 use std::collections::{hash_map::Entry::*, hash_set, HashMap, HashSet};
 
-#[derive(Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Graph {
     inputs: HashMap<Id, HashSet<Id>>,
 }
 
 impl Graph {
-    pub fn new() -> Self {
-        Self {
-            inputs: HashMap::new(),
-        }
-    }
-
     pub fn add(&mut self, from: Id, to: Id) {
         match self.inputs.entry(from) {
             Occupied(mut entry) => {

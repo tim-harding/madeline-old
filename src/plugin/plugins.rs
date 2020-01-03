@@ -3,21 +3,16 @@ use std::collections::HashMap;
 
 type PluginMap = HashMap<String, Box<dyn Plugin>>;
 
+#[derive(Default)]
 pub struct PluginsBuilder {
     plugins: PluginMap,
 }
 
 impl PluginsBuilder {
-    fn new() -> Self {
-        Self {
-            plugins: HashMap::new(),
-        }
-    }
-
     pub fn builtin() -> Self {
-        Self::new()
-            .with_plugin(Box::new(builtin::Loader::new()))
-            .with_plugin(Box::new(builtin::Merge::new()))
+        Self::default()
+            .with_plugin(Box::new(builtin::Loader::default()))
+            .with_plugin(Box::new(builtin::Merge::default()))
     }
 
     pub fn with_plugin(mut self, plugin: Box<dyn Plugin>) -> Self {
@@ -40,7 +35,7 @@ impl Plugins {
         Self { plugins }
     }
 
-    pub fn get(&self, name: &str) -> Option<&Box<dyn Plugin>> {
-        self.plugins.get(name)
+    pub fn get(&self, name: &str) -> Option<&dyn Plugin> {
+        self.plugins.get(name).map(|boxed| &**boxed)
     }
 }

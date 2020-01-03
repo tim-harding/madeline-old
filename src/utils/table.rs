@@ -1,6 +1,7 @@
 use super::Id;
 use std::slice::{Iter, IterMut};
 
+#[derive(Default, Debug)]
 pub struct Table<T> {
     next_id: Id,
     ids: Vec<Id>,
@@ -8,14 +9,6 @@ pub struct Table<T> {
 }
 
 impl<T> Table<T> {
-    pub fn new() -> Self {
-        Self {
-            next_id: 0,
-            ids: Vec::new(),
-            values: Vec::new(),
-        }
-    }
-
     pub fn add(&mut self, value: T) -> Id {
         self.next_id += 1;
         self.values.insert(self.next_id, value);
@@ -23,17 +16,13 @@ impl<T> Table<T> {
     }
 
     pub fn remove(&mut self, id: Id) {
-        match self.ids.as_slice().binary_search(&id) {
-            Ok(index) => {
-                self.ids.remove(index);
-                self.values.remove(index);
-            }
-            Err(_) => {}
+        if let Ok(index) = self.ids.as_slice().binary_search(&id) {
+            self.ids.remove(index);
+            self.values.remove(index);
         }
     }
 
     pub fn get(&self, id: Id) -> Option<&T> {
-        let value = self.values.get(id);
         match self.ids.as_slice().binary_search(&id) {
             Ok(index) => Some(&self.values[index]),
             Err(_) => None,
@@ -41,7 +30,6 @@ impl<T> Table<T> {
     }
 
     pub fn get_mut(&mut self, id: Id) -> Option<&mut T> {
-        let value = self.values.get(id);
         match self.ids.as_slice().binary_search(&id) {
             Ok(index) => Some(&mut self.values[index]),
             Err(_) => None,

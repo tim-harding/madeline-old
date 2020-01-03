@@ -6,8 +6,8 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-const NAME: &'static str = "loader";
-const INPUTS: [&'static str; 0] = [];
+const NAME: &str = "loader";
+const INPUTS: [&str; 0] = [];
 const CONTROLS: [control::Desc; 1] = [control::Desc::new("filename", control::Kind::Text)];
 const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
 
@@ -15,16 +15,9 @@ enum Parameters {
     Filename,
 }
 
+#[derive(Debug, Default)]
 pub struct Loader {
     images: HashMap<PathBuf, Image>,
-}
-
-impl Loader {
-    pub fn new() -> Self {
-        Self {
-            images: HashMap::new(),
-        }
-    }
 }
 
 impl Plugin for Loader {
