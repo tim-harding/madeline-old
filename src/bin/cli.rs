@@ -42,18 +42,15 @@ fn render() -> Result<(), String> {
     engine.dfs.process_queue(comp, &engine.graph);
     let queue = engine.dfs.render_queue();
     for id in queue.iter() {
-        let node = engine.nodes.get(*id).ok_or("Node not found.".to_string())?;
+        let node = engine.nodes.get(*id).ok_or("Node not found")?;
         if !node.dirty {
             continue;
         }
         let plugin = engine
             .plugins
             .get_ref(node.plugin)
-            .ok_or("Plugin not found".to_string())?;
-        let controls = engine
-            .controls
-            .get_ref(*id)
-            .ok_or("Controls not found".to_string())?;
+            .ok_or("Plugin not found")?;
+        let controls = engine.controls.get_ref(*id).ok_or("Controls not found")?;
         let inputs = engine
             .graph
             .0
@@ -68,7 +65,7 @@ fn render() -> Result<(), String> {
                     })
                     .collect::<Vec<_>>()
             })
-            .ok_or("Inputs not found".to_string())?;
+            .ok_or("Inputs not found")?;
         let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
         engine.images.update(*id, render);
     }

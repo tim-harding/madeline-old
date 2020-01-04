@@ -77,6 +77,6 @@ where
     T: Copy,
 {
     pub fn get(&self, id: Id) -> Option<T> {
-        self.get_ref(id).map(|v| *v)
+        self.get_ref(id).copied()
     }
 }
