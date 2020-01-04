@@ -41,9 +41,9 @@ fn render() -> Result<(), String> {
 
     engine.dfs.process_queue(comp, &engine.graph);
     let queue = engine.dfs.render_queue();
-    for id in queue.iter().rev() {
+    for id in queue.iter() {
         let node = engine.nodes.get(*id).ok_or("Node not found.".to_string())?;
-        if node.dirty {
+        if !node.dirty {
             continue;
         }
         let plugin = engine

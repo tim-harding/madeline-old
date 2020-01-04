@@ -10,8 +10,6 @@ pub struct Table<T> {
     values: Vec<T>,
 }
 
-// Same as #[derive] implementation, but this way
-// T is not required to implement Default
 impl<T> Default for Table<T> {
     fn default() -> Self {
         Self {
@@ -25,7 +23,8 @@ impl<T> Default for Table<T> {
 impl<T> Table<T> {
     pub fn insert(&mut self, value: T) -> Id {
         self.next_id += 1;
-        self.values.insert(self.next_id, value);
+        self.ids.push(self.next_id);
+        self.values.push(value);
         self.next_id
     }
 
