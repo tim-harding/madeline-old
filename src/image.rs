@@ -185,9 +185,8 @@ impl Image {
         self.channels.iter_mut()
     }
 
-    pub fn resize(&mut self, channel_count: usize) {
-        self.channels
-            .resize(channel_count, Channel::new(self.size()))
+    pub fn push(&mut self, channel: Channel) {
+        self.channels.push(channel)
     }
 }
 

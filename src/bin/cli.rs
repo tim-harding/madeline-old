@@ -22,6 +22,10 @@ fn render() -> Result<(), String> {
         .plugins
         .r#where(|plug| plug.desc().name == "merge")
         .ok_or("Failed to find merge plugin")?;
+    let shuffle = engine
+        .plugins
+        .r#where(|plug| plug.desc().name == "shuffle")
+        .ok_or("Failed to find shuffle plugin")?;
 
     let kitty = engine.insert_node(Node::new(loader));
     engine
@@ -39,37 +43,13 @@ fn render() -> Result<(), String> {
     engine.graph.connect(comp, tree, 0, &mut engine.dfs);
     engine.graph.connect(comp, kitty, 1, &mut engine.dfs);
 
-    engine.dfs.process_queue(comp, &engine.graph);
-    let queue = engine.dfs.render_queue();
-    for id in queue.iter() {
-        let node = engine.nodes.get(*id).ok_or("Node not found")?;
-        if !node.dirty {
-            continue;
-        }
-        let plugin = engine
-            .plugins
-            .get_ref(node.plugin)
-            .ok_or("Plugin not found")?;
-        let controls = engine.controls.get_ref(*id).ok_or("Controls not found")?;
-        let inputs = engine
-            .graph
-            .0
-            .get_ref(*id)
-            .map(|inputs| {
-                inputs
-                    .iter()
-                    .map(|maybe_id| {
-                        maybe_id
-                            .map(|input_id| engine.images.get_ref(input_id))
-                            .flatten()
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .ok_or("Inputs not found")?;
-        let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
-        engine.images.update(*id, render);
-    }
+    let swizzle = engine.insert_node(Node::new(shuffle));
+    engine.graph.connect(swizzle, comp, 0, &mut engine.dfs);
+    engine.controls.get_mut(swizzle).ok_or("Swizzle R not found")?[0] = Control::Integer(1);
+    engine.controls.get_mut(swizzle).ok_or("Swizzle G not found")?[1] = Control::Integer(2);
+    engine.controls.get_mut(swizzle).ok_or("Swizzle B not found")?[2] = Control::Integer(0);
+    engine.controls.get_mut(swizzle).ok_or("Swizzle A not found")?[3] = Control::Integer(3);
 
-    let comp = engine.images.get_ref(comp).ok_or("Comp image not found")?;
-    io::save(Path::new("data/merge.png"), &comp)
+    let comp = engine.render(swizzle)?;
+    io::save(Path::new("data/merge.png"), comp)
 }

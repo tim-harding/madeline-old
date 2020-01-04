@@ -34,4 +34,38 @@ impl Engine {
         self.dfs.insert_node();
         self.nodes.insert(node)
     }
+
+    pub fn render(&mut self, viewing: Id) -> Result<&Image, String> {
+        self.dfs.process_queue(viewing, &self.graph);
+        let queue = self.dfs.render_queue();
+        for id in queue.iter() {
+            let node = self.nodes.get(*id).ok_or("Node not found")?;
+            if !node.dirty {
+                continue;
+            }
+            let plugin = self
+                .plugins
+                .get_ref(node.plugin)
+                .ok_or("Plugin not found")?;
+            let controls = self.controls.get_ref(*id).ok_or("Controls not found")?;
+            let inputs = self
+                .graph
+                .0
+                .get_ref(*id)
+                .map(|inputs| {
+                    inputs
+                        .iter()
+                        .map(|maybe_id| {
+                            maybe_id
+                                .map(|input_id| self.images.get_ref(input_id))
+                                .flatten()
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .ok_or("Inputs not found")?;
+            let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
+            self.images.update(*id, render);
+        }
+        self.images.get_ref(viewing).ok_or("Comp image not found".to_string())
+    }
 }
