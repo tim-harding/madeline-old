@@ -1,12 +1,16 @@
-use crate::plugin::Plugin;
+use crate::utils::Id;
 
-#[derive(Copy, Clone)]
-pub struct Node<'a> {
-    plugin: &'a dyn Plugin,
+#[derive(Copy, Clone, Debug)]
+pub struct Node {
+    pub plugin: Id,
+    pub dirty: bool,
 }
 
-impl<'a> Node<'a> {
-    pub fn new(plugin: &'a dyn Plugin) -> Self {
-        Self { plugin }
+impl Node {
+    pub fn new(plugin: Id) -> Self {
+        Self {
+            plugin,
+            dirty: true,
+        }
     }
 }

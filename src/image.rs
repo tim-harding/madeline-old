@@ -151,7 +151,7 @@ impl<'a> Iterator for LineIterMut<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Image {
     channels: Vec<Channel>,
 }

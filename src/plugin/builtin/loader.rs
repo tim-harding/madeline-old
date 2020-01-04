@@ -2,8 +2,6 @@ use crate::control;
 use crate::image::Image;
 use crate::plugin::*;
 use crate::utils::io;
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 const NAME: &str = "loader";
@@ -16,20 +14,12 @@ enum Parameters {
 }
 
 #[derive(Debug, Default)]
-pub struct Loader {
-    images: HashMap<PathBuf, Image>,
-}
+pub struct Loader {}
 
 impl Plugin for Loader {
-    fn render(&mut self, _: Inputs, controls: Controls) -> Result<Image, String> {
+    fn render(&self, _: Inputs, controls: Controls) -> Result<Image, String> {
         let path = PathBuf::from(controls[Parameters::Filename as usize].as_str());
-        match self.images.entry(path.clone()) {
-            Occupied(entry) => Ok(entry.get().clone()),
-            Vacant(entry) => io::load(&path).and_then(|image| {
-                let image = entry.insert(image);
-                Ok(image.clone())
-            }),
-        }
+        io::load(&path)
     }
 
     fn desc(&self) -> &'static Desc {

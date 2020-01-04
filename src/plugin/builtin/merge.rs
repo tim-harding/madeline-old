@@ -17,7 +17,7 @@ const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
 pub struct Merge {}
 
 impl Plugin for Merge {
-    fn render(&mut self, inputs: Inputs, controls: Controls) -> Result<Image, String> {
+    fn render(&self, inputs: Inputs, controls: Controls) -> Result<Image, String> {
         let bg = match inputs[0] {
             Some(bg) => bg,
             None => return Err(String::from("Invalid background input")),

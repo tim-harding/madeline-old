@@ -1,5 +1,5 @@
 use crate::image::{self, Image};
-use crate::utils::{Vec2U, Vec2I};
+use crate::utils::{Vec2I, Vec2U};
 use ::png::{BitDepth, ColorType, Decoder, OutputInfo};
 use std::fs::File;
 use std::io::{self, BufWriter};

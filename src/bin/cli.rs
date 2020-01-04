@@ -1,9 +1,6 @@
 use madeline::control::Control;
-use madeline::image::Image;
-use madeline::plugin::{
-    builtin::{Loader, Merge},
-    Plugin,
-};
+use madeline::engine::Engine;
+use madeline::graph::Node;
 use madeline::utils::io;
 use std::path::Path;
 
@@ -15,29 +12,67 @@ fn main() {
 }
 
 fn render() -> Result<(), String> {
-    let mut loader = Loader::default();
-    let mut merge = Merge::default();
+    let mut engine = Engine::new();
 
-    let kitty = {
-        let inputs: Vec<Option<&Image>> = vec![];
-        let filename_control = Control::Text("data/kitty.png".to_string());
-        let controls = vec![&filename_control];
-        loader.render(inputs.as_slice(), controls.as_slice())
-    }?;
+    let loader = engine
+        .plugins
+        .r#where(|plug| plug.desc().name == "loader")
+        .ok_or("Failed to find loader plugin")?;
+    let merge = engine
+        .plugins
+        .r#where(|plug| plug.desc().name == "merge")
+        .ok_or("Failed to find merge plugin")?;
 
-    let tree = {
-        let inputs: Vec<Option<&Image>> = vec![];
-        let filename_control = Control::Text("data/tree.png".to_string());
-        let controls = vec![&filename_control];
-        loader.render(inputs.as_slice(), controls.as_slice())
-    }?;
+    let kitty = engine.insert_node(Node::new(loader));
+    engine
+        .controls
+        .get_mut(kitty)
+        .ok_or("Loader controls not found")?[0] = Control::Text("data/kitty.png".to_string());
 
-    let comp = {
-        let inputs: Vec<Option<&Image>> = vec![Some(&tree), Some(&kitty)];
-        let tx_control = Control::Vec2(Default::default());
-        let controls = vec![&tx_control];
-        merge.render(inputs.as_slice(), controls.as_slice())
-    }?;
+    let tree = engine.insert_node(Node::new(loader));
+    engine
+        .controls
+        .get_mut(tree)
+        .ok_or("Loader controls not found")?[0] = Control::Text("data/tree.png".to_string());
 
+    let comp = engine.insert_node(Node::new(merge));
+    engine.graph.connect(comp, tree, 0, &mut engine.dfs);
+    engine.graph.connect(comp, kitty, 1, &mut engine.dfs);
+
+    engine.dfs.process_queue(comp, &engine.graph);
+    let queue = engine.dfs.render_queue();
+    for id in queue.iter().rev() {
+        let node = engine.nodes.get(*id).ok_or("Node not found.".to_string())?;
+        if node.dirty {
+            continue;
+        }
+        let plugin = engine
+            .plugins
+            .get_ref(node.plugin)
+            .ok_or("Plugin not found".to_string())?;
+        let controls = engine
+            .controls
+            .get_ref(*id)
+            .ok_or("Controls not found".to_string())?;
+        let inputs = engine
+            .graph
+            .0
+            .get_ref(*id)
+            .map(|inputs| {
+                inputs
+                    .iter()
+                    .map(|maybe_id| {
+                        maybe_id
+                            .map(|input_id| engine.images.get_ref(input_id))
+                            .flatten()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .ok_or("Inputs not found".to_string())?;
+        let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
+        engine.images.update(*id, render);
+    }
+
+    let comp = engine.images.get_ref(comp).ok_or("Comp image not found")?;
     io::save(Path::new("data/merge.png"), &comp)
 }
