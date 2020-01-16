@@ -28,7 +28,7 @@ impl Plugin for Blur {
         desc.channels = 0;
         let mut out = Image::from_desc(desc);
 
-        // let flipped = Vec2U::new(desc.size.y, desc.size.x);
+        let flipped = Vec2U::new(desc.size.y, desc.size.x);
 
         let size = controls[Parameters::Size as usize].as_int();
         let mut filter = Vec::with_capacity(size);
@@ -40,9 +40,9 @@ impl Plugin for Blur {
 
         let max_dim = desc.size.x as isize - 1;
         for channel in bg.channels() {
-            let mut tmp = Channel::new(desc.size);
-            for (y, line) in tmp.lines_mut().enumerate() {
-                for (x, pixel) in line.enumerate() {
+            let mut tmp = Channel::new(flipped);
+            for y in 0..bg.desc().size.y {
+                for x in 0..bg.desc().size.x {
                     let mut acc = 0.0;
                     for (i, cell) in filter.iter().enumerate() {
                         let sample_x = x as isize + i as isize - size as isize;
@@ -51,7 +51,8 @@ impl Plugin for Blur {
                         let sample = channel.raw()[index];
                         acc += sample * cell;
                     }
-                    *pixel = acc;
+                    let out_index = x * desc.size.y + y;
+                    tmp[out_index] = acc;
                 }
             }
             out.push(tmp);
