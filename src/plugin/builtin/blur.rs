@@ -38,8 +38,8 @@ impl Plugin for Blur {
             filter.push(value);
         }
 
-        let max_dim = desc.size.x as isize - 1;
         for channel in bg.channels() {
+            let max_dim = desc.size.x as isize - 1;
             let mut tmp = Channel::new(flipped);
             for y in 0..bg.desc().size.y {
                 for x in 0..bg.desc().size.x {
@@ -55,7 +55,25 @@ impl Plugin for Blur {
                     tmp[out_index] = acc;
                 }
             }
-            out.push(tmp);
+
+            let max_dim = flipped.x as isize - 1;
+            let mut tmp_2 = Channel::new(desc.size);
+            for y in 0..flipped.y {
+                for x in 0..flipped.x {
+                    let mut acc = 0.0;
+                    for (i, cell) in filter.iter().enumerate() {
+                        let sample_x = x as isize + i as isize - size as isize;
+                        let sample_x = min(max_dim, max(0, sample_x)) as usize;
+                        let index = y * flipped.x + sample_x;
+                        let sample = tmp.raw()[index];
+                        acc += sample * cell;
+                    }
+                    let out_index = x * flipped.y + y;
+                    tmp_2[out_index] = acc;
+                }
+            }
+
+            out.push(tmp_2);
         }
 
         Ok(out)
