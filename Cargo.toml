@@ -4,5 +4,8 @@ version = "0.1.0"
 authors = ["Tim Harding <tim@timharding.co>"]
 edition = "2018"
 
+[lib]
+name = "madeline"
+
 [dependencies]
 png = "0.15.2"

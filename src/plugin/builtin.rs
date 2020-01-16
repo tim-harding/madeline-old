@@ -6,3 +6,6 @@ pub use merge::Merge;
 
 mod shuffle;
 pub use shuffle::Shuffle;
+
+mod blur;
+pub use blur::Blur;

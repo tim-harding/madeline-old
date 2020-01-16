@@ -66,6 +66,8 @@ impl Engine {
             let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
             self.images.update(*id, render);
         }
-        self.images.get_ref(viewing).ok_or("Comp image not found".to_string())
+        self.images
+            .get_ref(viewing)
+            .ok_or("Comp image not found".to_string())
     }
 }
