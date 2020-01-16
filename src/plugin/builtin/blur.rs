@@ -3,7 +3,6 @@ use crate::image::{Channel, Image};
 use crate::plugin::{self, *};
 use crate::utils::Vec2U;
 use std::cmp::{max, min};
-use std::iter::repeat;
 
 enum Parameters {
     Size,
@@ -28,8 +27,6 @@ impl Plugin for Blur {
         desc.channels = 0;
         let mut out = Image::from_desc(desc);
 
-        let flipped = Vec2U::new(desc.size.y, desc.size.x);
-
         let size = controls[Parameters::Size as usize].as_int();
         let mut filter = Vec::with_capacity(size);
         let samples = 1 + size * 2;
@@ -51,7 +48,7 @@ impl Plugin for Blur {
     }
 }
 
-fn blur_axis(channel: &Channel, filter: &Vec<f32>) -> Channel {
+fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
     let max_dim = channel.size().x as isize - 1;
     let flipped = Vec2U::new(channel.size().y, channel.size().x);
     let mut out = Channel::new(flipped);

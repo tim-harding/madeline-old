@@ -68,6 +68,6 @@ impl Engine {
         }
         self.images
             .get_ref(viewing)
-            .ok_or("Comp image not found".to_string())
+            .ok_or_else(|| "Comp image not found".into())
     }
 }
