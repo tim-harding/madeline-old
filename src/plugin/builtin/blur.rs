@@ -66,7 +66,7 @@ fn blur_axis(channel: &Channel, filter: &Vec<f32>) -> Channel {
                 let sample = channel.raw()[index];
                 acc += sample * cell;
             }
-            let out_index = x * flipped.y + y;
+            let out_index = x * channel.size().y + y;
             out[out_index] = acc;
         }
     }
