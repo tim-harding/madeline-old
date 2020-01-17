@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct Engine {
+    pub viewing: usize,
     pub plugins: Table<Plugin>,
     pub nodes: Table<Node>,
     pub graph: Graph,
@@ -34,8 +35,8 @@ impl Engine {
         self.nodes.insert(node)
     }
 
-    pub fn render(&mut self, viewing: Id) -> Result<&Image, String> {
-        self.dfs.process_queue(viewing, &self.graph);
+    pub fn render(&mut self) -> Result<&Image, String> {
+        self.dfs.process_queue(self.viewing, &self.graph);
         let queue = self.dfs.render_queue();
         for id in queue.iter() {
             let node = self.nodes.get(*id).ok_or("Node not found")?;
@@ -66,7 +67,7 @@ impl Engine {
             self.images.update(*id, render);
         }
         self.images
-            .get_ref(viewing)
+            .get_ref(self.viewing)
             .ok_or_else(|| "Comp image not found".into())
     }
 }

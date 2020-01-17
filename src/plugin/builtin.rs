@@ -1,4 +1,4 @@
 pub mod blur;
-pub mod loader;
+pub mod load;
 pub mod merge;
 pub mod shuffle;

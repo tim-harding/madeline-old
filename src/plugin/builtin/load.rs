@@ -10,7 +10,7 @@ enum Parameters {
 
 pub fn create() -> Plugin {
     let controls = [control::Desc::new("filename", Control::Text("".into()))];
-    let desc = plugin::Desc::new("loader", &[], &controls);
+    let desc = plugin::Desc::new("load", &[], &controls);
     Plugin::new(render, desc)
 }
 

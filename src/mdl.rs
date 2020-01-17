@@ -1,22 +1,36 @@
+use std::collections::HashMap;
 use std::iter::Peekable;
 use std::slice::Iter;
 
 type Tokens<'a> = Peekable<Iter<'a, Token>>;
 
-#[derive(Debug, Clone)]
-pub struct Pair {
-    pub key: String,
-    pub value: Value,
+#[derive(Default, Debug, Clone)]
+pub struct Graph {
+    pub nodes: Vec<Node>,
+    pub options: Vec<Pair<Literal>>,
 }
 
-impl Pair {
-    pub fn new(key: String, value: Value) -> Self {
+#[derive(Debug, Clone)]
+pub struct Pair<T> {
+    pub key: String,
+    pub value: T,
+}
+
+impl<T> Pair<T> {
+    pub fn new(key: String, value: T) -> Self {
         Self { key, value }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Value {
+    Text(String),
+    Real(f32),
+    Integer(isize),
+}
+
+#[derive(Debug, Clone)]
+pub enum Literal {
     Text(String),
     Identifier(String),
     Real(f32),
@@ -27,12 +41,17 @@ pub enum Value {
 pub struct Node {
     pub kind: String,
     pub name: String,
-    pub inputs: Vec<Pair>,
-    pub attributes: Vec<Pair>,
+    pub inputs: Vec<Pair<String>>,
+    pub attributes: Vec<Pair<Value>>,
 }
 
 impl Node {
-    pub fn new(kind: String, name: String, inputs: Vec<Pair>, attributes: Vec<Pair>) -> Self {
+    pub fn new(
+        kind: String,
+        name: String,
+        inputs: Vec<Pair<String>>,
+        attributes: Vec<Pair<Value>>,
+    ) -> Self {
         Self {
             kind,
             name,
@@ -50,19 +69,25 @@ enum Token {
     ParenR,
     CurlyL,
     CurlyR,
+
     Identifier(String),
     Text(String),
     Real(f32),
     Integer(isize),
+
+    Glob,
 }
 
-pub fn parse(src: &str) -> Result<Vec<Node>, String> {
+pub fn parse(src: &str) -> Result<Graph, String> {
     let tokens = tokens(src)?;
     let mut iter = tokens.iter().peekable();
-    nodes(&mut iter)
+    graph(&mut iter)
 }
 
 fn tokens(src: &str) -> Result<Vec<Token>, String> {
+    let mut keywords = HashMap::new();
+    keywords.insert("glob", Token::Glob);
+
     let mut tokens = Vec::new();
     let mut iter = src.chars().peekable();
     while let Some(c) = iter.next() {
@@ -73,6 +98,10 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
             ')' => Token::ParenR,
             '{' => Token::CurlyL,
             '}' => Token::CurlyR,
+            '#' => {
+                iter.find(|c| *c == '\n');
+                continue;
+            }
             '"' => {
                 let mut value = String::new();
                 while let Some(c) = iter.next() {
@@ -94,7 +123,10 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
                             break;
                         }
                     }
-                    Token::Identifier(value)
+                    match keywords.get(value.as_str()) {
+                        Some(token) => token.clone(),
+                        None => Token::Identifier(value),
+                    }
                 } else if other.is_ascii_digit() || other == '-' {
                     let mut value = String::new();
                     value.push(other);
@@ -123,12 +155,18 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
     Ok(tokens)
 }
 
-fn nodes(iter: &mut Tokens) -> Result<Vec<Node>, String> {
-    let mut nodes = Vec::new();
-    while let Some(_) = iter.peek() {
-        nodes.push(node(iter)?);
+fn graph(iter: &mut Tokens) -> Result<Graph, String> {
+    let mut graph = Graph::default();
+    while let Some(token) = iter.peek() {
+        match token {
+            Token::Glob => {
+                iter.next();
+                graph.options.push(pair(iter, literal)?);
+            }
+            _ => graph.nodes.push(node(iter)?),
+        }
     }
-    Ok(nodes)
+    Ok(graph)
 }
 
 fn node(iter: &mut Tokens) -> Result<Node, String> {
@@ -147,7 +185,7 @@ fn node(iter: &mut Tokens) -> Result<Node, String> {
         _ => return Err("Missing node inputs".into()),
     };
 
-    let inputs = pairs(iter)?;
+    let inputs = pairs(iter, identifier)?;
 
     match iter.next() {
         Some(Token::ParenR) => {}
@@ -159,7 +197,7 @@ fn node(iter: &mut Tokens) -> Result<Node, String> {
         _ => return Err("Missing node attributes".into()),
     };
 
-    let attributes = pairs(iter)?;
+    let attributes = pairs(iter, value)?;
 
     match iter.next() {
         Some(Token::CurlyR) => {}
@@ -169,18 +207,20 @@ fn node(iter: &mut Tokens) -> Result<Node, String> {
     Ok(Node::new(kind, name, inputs, attributes))
 }
 
-fn pairs(iter: &mut Tokens) -> Result<Vec<Pair>, String> {
+fn pairs<T>(iter: &mut Tokens, mapper: ValueMapper<T>) -> Result<Vec<Pair<T>>, String> {
     let mut pairs = Vec::new();
     while let Some(token) = iter.peek() {
         match token {
-            Token::Identifier(_) => pairs.push(pair(iter)?),
+            Token::Identifier(_) => pairs.push(pair(iter, mapper)?),
             _ => break,
         }
     }
     Ok(pairs)
 }
 
-fn pair(iter: &mut Tokens) -> Result<Pair, String> {
+type ValueMapper<T> = fn(&mut Tokens) -> Result<T, String>;
+
+fn pair<T>(iter: &mut Tokens, mapper: ValueMapper<T>) -> Result<Pair<T>, String> {
     let key = match iter.next() {
         Some(Token::Identifier(name)) => name.into(),
         _ => return Err("Missing pair key".into()),
@@ -191,7 +231,7 @@ fn pair(iter: &mut Tokens) -> Result<Pair, String> {
         _ => return Err("Missing pair separator".into()),
     };
 
-    let value = value(iter)?;
+    let value = mapper(iter)?;
 
     if let Some(Token::Comma) = iter.peek() {
         iter.next();
@@ -204,11 +244,33 @@ fn value(iter: &mut Tokens) -> Result<Value, String> {
     match iter.next() {
         Some(token) => Ok(match token {
             Token::Text(value) => Value::Text(value.into()),
-            Token::Identifier(value) => Value::Identifier(value.into()),
-            Token::Integer(value) => Value::Integer(*value),
             Token::Real(value) => Value::Real(*value),
+            Token::Integer(value) => Value::Integer(*value),
             other => return Err(format!("Invalid value: {:?}", other)),
         }),
-        _ => Err("Invalid value".into()),
+        None => Err("Invalid value".into()),
+    }
+}
+
+fn identifier(iter: &mut Tokens) -> Result<String, String> {
+    match iter.next() {
+        Some(token) => Ok(match token {
+            Token::Identifier(name) => name.into(),
+            other => return Err(format!("Invalid value: {:?}", other)),
+        }),
+        None => Err("Invalid value".into()),
+    }
+}
+
+fn literal(iter: &mut Tokens) -> Result<Literal, String> {
+    match iter.next() {
+        Some(token) => Ok(match token {
+            Token::Text(value) => Literal::Text(value.into()),
+            Token::Identifier(name) => Literal::Identifier(name.into()),
+            Token::Real(value) => Literal::Real(*value),
+            Token::Integer(value) => Literal::Integer(*value),
+            other => return Err(format!("Invalid value: {:?}", other)),
+        }),
+        None => Err("Invalid value".into()),
     }
 }

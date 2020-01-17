@@ -16,7 +16,7 @@ pub fn create() -> Plugin {
         control::Desc::new("b", Control::Integer(2)),
         control::Desc::new("a", Control::Integer(3)),
     ];
-    let desc = plugin::Desc::new("shufflel", &["bg"], &controls);
+    let desc = plugin::Desc::new("shuffle", &["bg"], &controls);
     Plugin::new(render, desc)
 }
 
