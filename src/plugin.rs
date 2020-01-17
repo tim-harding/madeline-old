@@ -25,8 +25,11 @@ impl Desc {
         Self {
             name: name.into(),
             controls_map: Enumeration::new(controls.iter().map(|desc| desc.name)),
-            controls: controls.iter().map(|desc| desc.kind.clone()).collect::<Vec<_>>(),
-            inputs: Enumeration::new(inputs.iter().map(|name| *name)),
+            controls: controls
+                .iter()
+                .map(|desc| desc.kind.clone())
+                .collect::<Vec<_>>(),
+            inputs: Enumeration::new(inputs.iter().copied()),
         }
     }
 

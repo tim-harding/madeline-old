@@ -3,9 +3,7 @@ use madeline::{
     engine::Engine,
     graph::Node,
     mdl,
-    utils::{io, Vec2I},
 };
-use std::path::Path;
 
 use std::collections::HashMap;
 
@@ -19,57 +17,42 @@ fn main() {
 fn render() -> Result<(), String> {
     let mdl = std::fs::read_to_string("data/test_comp.mdl").map_err(|_| "".to_string())?;
     let content = madeline::mdl::parse(&mdl)?;
-    println!("{:#?}", content);
+    let _out = unpack(&content);
     Ok(())
 }
 
 fn unpack(mdl: &[mdl::Node]) -> Result<(), String> {
-    let engine = Engine::new();
+    let mut engine = Engine::new();
     let mut nodes = HashMap::new();
     for def in mdl {
-        let plugin = engine
+        let plugin_id = engine
             .plugins
             .r#where(|plug| plug.desc().name() == def.kind)
             .ok_or(format!("Could not resolve plugin: {}", def.kind))?;
 
-        let id = nodes
-            .insert(&def.name, Node::new(plugin))
-            .ok_or("Could not insert node")?;
+        let id = engine.insert_node(Node::new(plugin_id));
+        nodes.insert(&def.name, id).ok_or("Could not insert node")?;
         for attr in def.attributes.iter() {
-            /*
-            for (i, desc) in engine
-                .plugins
-                .get_ref(plugin)
-                .unwrap()
-                .desc()
-                .control_descs
-                .iter()
-                .enumerate()
-            {
-                let mut found = false;
-                if attr.key == desc.name() {
-                    engine.controls.get_mut(id).unwrap()[i] = match attr.value {
-                        mdl::Value::Text(text) => {
-
-                        },
-                        mdl::Value::Number(value) => {
-
-                        },
-                        mdl::Value::Identifier(name) => {
-
-                        },
-                        mdl::Value::Vector(values) => {
-
-                        },
+            let plugin = engine.plugins.get_ref(plugin_id).unwrap();
+            if let Some(index) = plugin.desc().index_for_control(&attr.key) {
+                if let Some(controls) = engine.controls.get_mut(id) {
+                    let new = match (&attr.value, &controls[index]) {
+                        (mdl::Value::Text(text), Control::Text(_)) => Control::Text(text.into()),
+                        (mdl::Value::Real(value), Control::Real(_)) => Control::Real(*value),
+                        (mdl::Value::Integer(value), Control::Integer(_)) => {
+                            Control::Integer(*value)
+                        }
+                        _ => continue,
                     };
+                    controls[index] = new;
                 }
             }
-            */
         }
     }
     Ok(())
 }
 
+/*
 fn test() -> Result<(), String> {
     let mut engine = Engine::new();
 
@@ -136,3 +119,4 @@ fn test() -> Result<(), String> {
     let comp = engine.render(smear)?;
     io::save(Path::new("data/merge.png"), comp)
 }
+*/

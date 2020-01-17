@@ -9,9 +9,9 @@ enum Parameters {
 }
 
 pub fn create() -> Plugin {
-    let controls = [control::Desc::new("filename", None, Control::Text("".into()))];
+    let controls = [control::Desc::new("filename", Control::Text("".into()))];
     let desc = plugin::Desc::new("loader", &[], &controls);
-    Plugin::new(render,desc)
+    Plugin::new(render, desc)
 }
 
 fn render(_: Inputs, controls: Controls) -> Result<Image, String> {

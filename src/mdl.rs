@@ -18,9 +18,9 @@ impl Pair {
 #[derive(Debug, Clone)]
 pub enum Value {
     Text(String),
-    Number(f32),
     Identifier(String),
-    Vector(Vec<f32>),
+    Real(f32),
+    Integer(isize),
 }
 
 #[derive(Debug, Clone)]
@@ -50,11 +50,10 @@ enum Token {
     ParenR,
     CurlyL,
     CurlyR,
-    SquareL,
-    SquareR,
     Identifier(String),
     Text(String),
-    Number(f32),
+    Real(f32),
+    Integer(isize),
 }
 
 pub fn parse(src: &str) -> Result<Vec<Node>, String> {
@@ -74,8 +73,6 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
             ')' => Token::ParenR,
             '{' => Token::CurlyL,
             '}' => Token::CurlyR,
-            '[' => Token::SquareL,
-            ']' => Token::SquareR,
             '"' => {
                 let mut value = String::new();
                 while let Some(c) = iter.next() {
@@ -108,9 +105,12 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
                             break;
                         }
                     }
-                    match value.parse::<f32>() {
-                        Ok(value) => Token::Number(value),
-                        Err(_) => return Err("Could not parse number".into()),
+                    match value.parse::<isize>() {
+                        Ok(value) => Token::Integer(value),
+                        Err(_) => match value.parse::<f32>() {
+                            Ok(value) => Token::Real(value),
+                            Err(_) => return Err("Could not parse number".into()),
+                        },
                     }
                 } else if other.is_ascii_whitespace() {
                     continue;
@@ -193,11 +193,8 @@ fn pair(iter: &mut Tokens) -> Result<Pair, String> {
 
     let value = value(iter)?;
 
-    match iter.peek() {
-        Some(Token::Comma) => {
-            iter.next();
-        }
-        _ => {}
+    if let Some(Token::Comma) = iter.peek() {
+        iter.next();
     }
 
     Ok(Pair::new(key, value))
@@ -207,26 +204,10 @@ fn value(iter: &mut Tokens) -> Result<Value, String> {
     match iter.next() {
         Some(token) => Ok(match token {
             Token::Text(value) => Value::Text(value.into()),
-            Token::Number(value) => Value::Number(*value),
             Token::Identifier(value) => Value::Identifier(value.into()),
-            Token::SquareL => {
-                let mut values = Vec::new();
-                while let Some(token) = iter.next() {
-                    match token {
-                        Token::Number(value) => {
-                            values.push(*value);
-                            match iter.next() {
-                                Some(Token::Comma) => continue,
-                                Some(Token::SquareR) => break,
-                                _ => return Err("Invalid vector".into()),
-                            }
-                        }
-                        _ => return Err("Invalid vector".into()),
-                    }
-                }
-                Value::Vector(values)
-            }
-            _ => return Err("Invalid value".into()),
+            Token::Integer(value) => Value::Integer(*value),
+            Token::Real(value) => Value::Real(*value),
+            other => return Err(format!("Invalid value: {:?}", other)),
         }),
         _ => Err("Invalid value".into()),
     }

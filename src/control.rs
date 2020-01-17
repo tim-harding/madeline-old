@@ -1,38 +1,42 @@
-use crate::utils::Enumeration;
-use crate::utils::Vec2I;
+use std::cmp::max;
 
 #[derive(Clone, Debug)]
 pub struct Desc {
     pub name: &'static str,
-    pub enumeration: Option<Enumeration>,
     pub kind: Control,
 }
 
 impl Desc {
-    pub fn new(name: &'static str, enumeration: Option<Enumeration>, kind: Control) -> Self {
-        Self { name, enumeration, kind }
+    pub fn new(name: &'static str, kind: Control) -> Self {
+        Self { name, kind }
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum Control {
-    Integer(usize),
-    Float(f32),
+    Integer(isize),
+    Real(f32),
     Text(String),
-    Vec2(Vec2I),
 }
 
 impl Control {
-    pub fn as_int(&self) -> usize {
+    pub fn as_int(&self) -> isize {
         match self {
             Control::Integer(value) => *value,
             _ => Default::default(),
         }
     }
 
-    pub fn as_float(&self) -> f32 {
+    pub fn as_uint(&self) -> usize {
         match self {
-            Control::Float(value) => *value,
+            Control::Integer(value) => max(0, *value) as usize,
+            _ => Default::default(),
+        }
+    }
+
+    pub fn as_real(&self) -> f32 {
+        match self {
+            Control::Real(value) => *value,
             _ => Default::default(),
         }
     }
@@ -41,13 +45,6 @@ impl Control {
         match self {
             Control::Text(value) => value.as_str(),
             _ => "",
-        }
-    }
-
-    pub fn as_vec(&self) -> Vec2I {
-        match self {
-            Control::Vec2(value) => *value,
-            _ => Default::default(),
         }
     }
 }

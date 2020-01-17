@@ -9,7 +9,7 @@ enum Parameters {
 }
 
 pub fn create() -> Plugin {
-    let controls = [control::Desc::new("size", None, Control::Integer(0))];
+    let controls = [control::Desc::new("size", Control::Integer(0))];
     let desc = plugin::Desc::new("blur", &["bg"], &controls);
     Plugin::new(render, desc)
 }
@@ -24,7 +24,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     desc.channels = 0;
     let mut out = Image::from_desc(desc);
 
-    let size = controls[Parameters::Size as usize].as_int();
+    let size: usize = controls[Parameters::Size as usize].as_uint();
     let mut filter = Vec::with_capacity(size);
     let samples = 1 + size * 2;
     for i in 0..samples {
