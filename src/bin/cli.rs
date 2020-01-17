@@ -12,6 +12,13 @@ fn main() {
 }
 
 fn render() -> Result<(), String> {
+    let mdl = std::fs::read_to_string("data/test_comp.mdl").map_err(|_| "".to_string())?;
+    let ast = madeline::mdl::ast(&mdl)?;
+    println!("{:#?}", ast);
+    Ok(())
+}
+
+fn test() -> Result<(), String> {
     let mut engine = Engine::new();
 
     let loader = engine

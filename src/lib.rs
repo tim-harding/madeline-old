@@ -6,3 +6,4 @@ pub mod graph;
 pub mod image;
 pub mod plugin;
 pub mod utils;
+pub mod mdl;
