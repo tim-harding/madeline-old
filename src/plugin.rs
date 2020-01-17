@@ -1,4 +1,5 @@
 mod plugins;
+use crate::utils::Enumeration;
 pub use plugins::*;
 
 pub mod builtin;
@@ -7,39 +8,64 @@ use crate::control::{self, Control};
 use crate::image::Image;
 use crate::plugin;
 
-type Name = &'static str;
-type InputsDesc = &'static [&'static str];
-type ControlsDesc = &'static [control::Desc];
+pub type Inputs<'a> = &'a [Option<&'a Image>];
+pub type Controls<'a> = &'a [Control];
+pub type Render = fn(Inputs, Controls) -> Result<Image, String>;
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Desc {
-    pub name: Name,
-    pub inputs: InputsDesc,
-    control_descs: ControlsDesc,
+    name: String,
+    inputs: Enumeration,
+    controls: Vec<Control>,
+    controls_map: Enumeration,
 }
 
 impl Desc {
-    pub const fn new(name: Name, inputs: InputsDesc, controls: ControlsDesc) -> Self {
+    pub fn new(name: &str, inputs: &[&str], controls: &[control::Desc]) -> Self {
         Self {
-            name,
-            inputs,
-            control_descs: controls,
+            name: name.into(),
+            controls_map: Enumeration::new(controls.iter().map(|desc| desc.name)),
+            controls: controls.iter().map(|desc| desc.kind.clone()).collect::<Vec<_>>(),
+            inputs: Enumeration::new(inputs.iter().map(|name| *name)),
         }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn index_for_control(&self, name: &str) -> Option<usize> {
+        self.controls_map.index(name)
+    }
+
+    pub fn index_for_input(&self, name: &str) -> Option<usize> {
+        self.inputs.index(name)
+    }
+
+    pub fn inputs_len(&self) -> usize {
+        self.inputs.len()
     }
 
     pub fn controls(&self) -> Vec<Control> {
-        let mut out = Vec::new();
-        for desc in self.control_descs.iter() {
-            out.push(Control::from(&desc.kind()));
-        }
-        out
+        self.controls.clone()
     }
 }
 
-pub type Inputs<'a> = &'a [Option<&'a Image>];
-pub type Controls<'a> = &'a [Control];
+pub struct Plugin {
+    render: Render,
+    desc: Desc,
+}
 
-pub trait Plugin {
-    fn render(&self, inputs: Inputs, controls: Controls) -> Result<Image, String>;
-    fn desc(&self) -> &'static plugin::Desc;
+impl Plugin {
+    pub fn new(render: Render, desc: Desc) -> Self {
+        Self { render, desc }
+    }
+
+    pub fn desc(&self) -> &Desc {
+        &self.desc
+    }
+
+    pub fn render(&self, inputs: Inputs, controls: Controls) -> Result<Image, String> {
+        (self.render)(inputs, controls)
+    }
 }

@@ -33,7 +33,12 @@ pub struct Node {
 
 impl Node {
     pub fn new(kind: String, name: String, inputs: Vec<Pair>, attributes: Vec<Pair>) -> Self {
-        Self { kind, name, inputs, attributes }
+        Self {
+            kind,
+            name,
+            inputs,
+            attributes,
+        }
     }
 }
 
@@ -52,10 +57,10 @@ enum Token {
     Number(f32),
 }
 
-pub fn ast(src: &str) -> Result<Vec<Node>, String> {
+pub fn parse(src: &str) -> Result<Vec<Node>, String> {
     let tokens = tokens(src)?;
     let mut iter = tokens.iter().peekable();
-    graph(&mut iter)
+    nodes(&mut iter)
 }
 
 fn tokens(src: &str) -> Result<Vec<Token>, String> {
@@ -80,7 +85,7 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
                     }
                 }
                 Token::Text(value)
-            },
+            }
             other => {
                 if other.is_ascii_alphabetic() {
                     let mut value = String::new();
@@ -112,13 +117,13 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
                 } else {
                     return Err("Grammer does not match".into());
                 }
-            },
+            }
         });
     }
     Ok(tokens)
 }
 
-fn graph(iter: &mut Tokens) -> Result<Vec<Node>, String> {
+fn nodes(iter: &mut Tokens) -> Result<Vec<Node>, String> {
     let mut nodes = Vec::new();
     while let Some(_) = iter.peek() {
         nodes.push(node(iter)?);
@@ -138,26 +143,26 @@ fn node(iter: &mut Tokens) -> Result<Node, String> {
     };
 
     match iter.next() {
-        Some(Token::ParenL) => { },
+        Some(Token::ParenL) => {}
         _ => return Err("Missing node inputs".into()),
     };
 
     let inputs = pairs(iter)?;
 
     match iter.next() {
-        Some(Token::ParenR) => { },
+        Some(Token::ParenR) => {}
         _ => return Err("Unclosed node inputs".into()),
     };
 
     match iter.next() {
-        Some(Token::CurlyL) => { },
+        Some(Token::CurlyL) => {}
         _ => return Err("Missing node attributes".into()),
     };
 
     let attributes = pairs(iter)?;
 
     match iter.next() {
-        Some(Token::CurlyR) => { },
+        Some(Token::CurlyR) => {}
         _ => return Err("Unclosed node attributes".into()),
     };
 
@@ -180,17 +185,19 @@ fn pair(iter: &mut Tokens) -> Result<Pair, String> {
         Some(Token::Identifier(name)) => name.into(),
         _ => return Err("Missing pair key".into()),
     };
-    
+
     match iter.next() {
-        Some(Token::Colon) => { },
+        Some(Token::Colon) => {}
         _ => return Err("Missing pair separator".into()),
     };
 
     let value = value(iter)?;
-    
+
     match iter.peek() {
-        Some(Token::Comma) => { iter.next(); },
-        _ => { },
+        Some(Token::Comma) => {
+            iter.next();
+        }
+        _ => {}
     }
 
     Ok(Pair::new(key, value))
@@ -213,12 +220,12 @@ fn value(iter: &mut Tokens) -> Result<Value, String> {
                                 Some(Token::SquareR) => break,
                                 _ => return Err("Invalid vector".into()),
                             }
-                        },
+                        }
                         _ => return Err("Invalid vector".into()),
                     }
                 }
                 Value::Vector(values)
-            },
+            }
             _ => return Err("Invalid value".into()),
         }),
         _ => Err("Invalid value".into()),

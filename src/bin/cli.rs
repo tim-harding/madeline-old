@@ -1,8 +1,13 @@
-use madeline::control::Control;
-use madeline::engine::Engine;
-use madeline::graph::Node;
-use madeline::utils::{io, Vec2I};
+use madeline::{
+    control::Control,
+    engine::Engine,
+    graph::Node,
+    mdl,
+    utils::{io, Vec2I},
+};
 use std::path::Path;
+
+use std::collections::HashMap;
 
 fn main() {
     match render() {
@@ -13,8 +18,55 @@ fn main() {
 
 fn render() -> Result<(), String> {
     let mdl = std::fs::read_to_string("data/test_comp.mdl").map_err(|_| "".to_string())?;
-    let ast = madeline::mdl::ast(&mdl)?;
-    println!("{:#?}", ast);
+    let content = madeline::mdl::parse(&mdl)?;
+    println!("{:#?}", content);
+    Ok(())
+}
+
+fn unpack(mdl: &[mdl::Node]) -> Result<(), String> {
+    let engine = Engine::new();
+    let mut nodes = HashMap::new();
+    for def in mdl {
+        let plugin = engine
+            .plugins
+            .r#where(|plug| plug.desc().name() == def.kind)
+            .ok_or(format!("Could not resolve plugin: {}", def.kind))?;
+
+        let id = nodes
+            .insert(&def.name, Node::new(plugin))
+            .ok_or("Could not insert node")?;
+        for attr in def.attributes.iter() {
+            /*
+            for (i, desc) in engine
+                .plugins
+                .get_ref(plugin)
+                .unwrap()
+                .desc()
+                .control_descs
+                .iter()
+                .enumerate()
+            {
+                let mut found = false;
+                if attr.key == desc.name() {
+                    engine.controls.get_mut(id).unwrap()[i] = match attr.value {
+                        mdl::Value::Text(text) => {
+
+                        },
+                        mdl::Value::Number(value) => {
+
+                        },
+                        mdl::Value::Identifier(name) => {
+
+                        },
+                        mdl::Value::Vector(values) => {
+
+                        },
+                    };
+                }
+            }
+            */
+        }
+    }
     Ok(())
 }
 
@@ -23,19 +75,19 @@ fn test() -> Result<(), String> {
 
     let loader = engine
         .plugins
-        .r#where(|plug| plug.desc().name == "loader")
+        .r#where(|plug| plug.desc().name() == "loader")
         .ok_or("Failed to find loader plugin")?;
     let merge = engine
         .plugins
-        .r#where(|plug| plug.desc().name == "merge")
+        .r#where(|plug| plug.desc().name() == "merge")
         .ok_or("Failed to find merge plugin")?;
     let shuffle = engine
         .plugins
-        .r#where(|plug| plug.desc().name == "shuffle")
+        .r#where(|plug| plug.desc().name() == "shuffle")
         .ok_or("Failed to find shuffle plugin")?;
     let blur = engine
         .plugins
-        .r#where(|plug| plug.desc().name == "blur")
+        .r#where(|plug| plug.desc().name() == "blur")
         .ok_or("Failed to find blur plugin")?;
 
     let kitty = engine.insert_node(Node::new(loader));

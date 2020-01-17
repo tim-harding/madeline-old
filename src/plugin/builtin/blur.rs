@@ -1,4 +1,4 @@
-use crate::control;
+use crate::control::{self, Control};
 use crate::image::{Channel, Image};
 use crate::plugin::{self, *};
 use crate::utils::Vec2U;
@@ -8,44 +8,36 @@ enum Parameters {
     Size,
 }
 
-const NAME: &str = "blur";
-const INPUTS: [&str; 1] = ["bg"];
-const CONTROLS: [control::Desc; 1] = [control::Desc::new("size", control::Kind::Integer)];
-const DESC: plugin::Desc = plugin::Desc::new(NAME, &INPUTS, &CONTROLS);
+pub fn create() -> Plugin {
+    let controls = [control::Desc::new("size", None, Control::Integer(0))];
+    let desc = plugin::Desc::new("blur", &["bg"], &controls);
+    Plugin::new(render, desc)
+}
 
-#[derive(Debug, Default)]
-pub struct Blur {}
+fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
+    let bg = match inputs[0] {
+        Some(bg) => bg,
+        None => return Err(String::from("Invalid background input")),
+    };
 
-impl Plugin for Blur {
-    fn render(&self, inputs: Inputs, controls: Controls) -> Result<Image, String> {
-        let bg = match inputs[0] {
-            Some(bg) => bg,
-            None => return Err(String::from("Invalid background input")),
-        };
+    let mut desc = bg.desc();
+    desc.channels = 0;
+    let mut out = Image::from_desc(desc);
 
-        let mut desc = bg.desc();
-        desc.channels = 0;
-        let mut out = Image::from_desc(desc);
-
-        let size = controls[Parameters::Size as usize].as_int();
-        let mut filter = Vec::with_capacity(size);
-        let samples = 1 + size * 2;
-        for i in 0..samples {
-            let value = sample(i, size);
-            filter.push(value);
-        }
-
-        for channel in bg.channels() {
-            let tmp = blur_axis(&channel, &filter);
-            out.push(blur_axis(&tmp, &filter));
-        }
-
-        Ok(out)
+    let size = controls[Parameters::Size as usize].as_int();
+    let mut filter = Vec::with_capacity(size);
+    let samples = 1 + size * 2;
+    for i in 0..samples {
+        let value = sample(i, size);
+        filter.push(value);
     }
 
-    fn desc(&self) -> &'static plugin::Desc {
-        &DESC
+    for channel in bg.channels() {
+        let tmp = blur_axis(&channel, &filter);
+        out.push(blur_axis(&tmp, &filter));
     }
+
+    Ok(out)
 }
 
 fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {

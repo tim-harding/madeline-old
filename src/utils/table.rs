@@ -1,8 +1,6 @@
 use super::Id;
 use std::slice::{Iter, IterMut};
 
-type Filter<T> = fn(value: &T) -> bool;
-
 #[derive(Debug, Clone)]
 pub struct Table<T> {
     next_id: Id,
@@ -41,7 +39,10 @@ impl<T> Table<T> {
         }
     }
 
-    pub fn r#where(&self, filter: Filter<T>) -> Option<Id> {
+    pub fn r#where<F>(&self, filter: F) -> Option<Id>
+    where
+        F: Fn(&T) -> bool,
+    {
         self.rows().position(filter).map(|i| self.ids[i])
     }
 

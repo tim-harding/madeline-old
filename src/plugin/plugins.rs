@@ -1,11 +1,9 @@
 use super::{builtin, Plugin};
 use crate::utils::Table;
 
-pub type Plugins = Table<Box<dyn Plugin>>;
-
-pub fn populate_builtin(plugins: &mut Plugins) {
-    plugins.insert(Box::new(builtin::Loader::default()));
-    plugins.insert(Box::new(builtin::Merge::default()));
-    plugins.insert(Box::new(builtin::Shuffle::default()));
-    plugins.insert(Box::new(builtin::Blur::default()));
+pub fn populate_builtin(plugins: &mut Table<Plugin>) {
+    plugins.insert(builtin::loader::create());
+    plugins.insert(builtin::merge::create());
+    plugins.insert(builtin::shuffle::create());
+    plugins.insert(builtin::blur::create());
 }
