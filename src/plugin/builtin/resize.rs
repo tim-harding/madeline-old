@@ -29,7 +29,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
 
     // This should later have the dimensions flipped to make memory access
     // for the next convolution stage linear
-    let h_buf_desc = image::Desc::new(Vec2U::new(sx, bg.desc().size.y), bg.channel_count());
+    let h_buf_desc = image::Desc::new(Vec2U::new(bg.desc().size.y, sx), bg.channel_count());
     let mut h_buf = Image::from_desc(h_buf_desc);
 
     let v_buf_desc = image::Desc::new(Vec2U::new(sx, sy), bg.channel_count());
@@ -42,10 +42,11 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let _scale_factor_y = bg.desc().size.y as f32 / sy as f32;
 
     for (src_channel, dst_channel) in bg.channels().zip(h_buf.channels_mut()) {
-        // If line weren't an iterator, we could just index into that
-        // rather than calculating an index into the image.
-        for (y, dst_line) in dst_channel.lines_mut().enumerate() {
-            for (x, dst_px) in dst_line.enumerate() {
+        // Starting with x, which is out-of-order. However, since
+        // dst is flipped over y=x, this yields in-order access to
+        // the src buffer.
+        for (x, line) in dst_channel.lines_mut().enumerate() {
+            for (y, px) in line.enumerate() {
                 let out_pos = x as f32 * scale_factor_x;
                 let lo = (out_pos - offset_x).round() as isize;
                 let hi = (out_pos + offset_x).round() as isize;
@@ -58,14 +59,8 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                     let filter = sample((i - lo) as f32, offset_x);
                     acc += value * filter;
                 }
-                *dst_px = acc;
 
-                /*
-                let x_index = min(bg.desc().size.x - 1, max(0, out_pos as isize) as usize);
-                let index = y * bg.desc().size.x + x_index;
-                let value = src_channel[index];
-                *dst_px = value;
-                */
+                *px = acc;
             }
         }
     }
