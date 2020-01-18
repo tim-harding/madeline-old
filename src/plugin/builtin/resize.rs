@@ -27,21 +27,21 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let sx = controls[Parameters::SizeX as usize].as_uint();
     let sy = controls[Parameters::SizeY as usize].as_uint();
 
-    // This should later have the dimensions flipped to make memory access
-    // for the next convolution stage linear
-    let h_buf_desc = image::Desc::new(Vec2U::new(bg.desc().size.y, sx), bg.channel_count());
-    let mut h_buf = Image::from_desc(h_buf_desc);
+    let h_buf = resize_axis(&bg, sx);
+    let v_buf = resize_axis(&h_buf, sy);
 
-    let v_buf_desc = image::Desc::new(Vec2U::new(sx, sy), bg.channel_count());
-    let mut _v_buf = Image::from_desc(v_buf_desc);
+    Ok(v_buf)
+}
+
+fn resize_axis(src: &Image, dim: usize) -> Image {
+    let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
+    let mut buf = Image::from_desc(buf_desc);
 
     let filter_width = 2.0f32;
-    let scale_factor_x = bg.desc().size.x as f32 / sx as f32;
+    let scale_factor_x = src.desc().size.x as f32 / dim as f32;
     let offset_x = filter_width * scale_factor_x;
 
-    let _scale_factor_y = bg.desc().size.y as f32 / sy as f32;
-
-    for (src_channel, dst_channel) in bg.channels().zip(h_buf.channels_mut()) {
+    for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         // Starting with x, which is out-of-order. However, since
         // dst is flipped over y=x, this yields in-order access to
         // the src buffer.
@@ -53,8 +53,8 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
 
                 let mut acc = 0.0;
                 for i in lo..hi {
-                    let x_index = min(bg.desc().size.x - 1, max(0, i) as usize);
-                    let index = y * bg.desc().size.x + x_index;
+                    let x_index = min(src.desc().size.x - 1, max(0, i) as usize);
+                    let index = y * src.desc().size.x + x_index;
                     let value = src_channel[index];
                     let filter = sample((i - lo) as f32, offset_x);
                     acc += value * filter;
@@ -65,8 +65,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         }
     }
 
-    // Should be v_buf in the end
-    Ok(h_buf)
+    buf
 }
 
 fn sample(x: f32, radius: f32) -> f32 {
