@@ -1,8 +1,7 @@
 use crate::control;
-use crate::image::{Channel, Image};
+use crate::image::Image;
 use crate::plugin::{self, *};
-use crate::utils::{Vec2U, Value};
-use std::cmp::{max, min};
+use crate::utils::Value;
 
 enum Parameters {
     Gamma,

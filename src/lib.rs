@@ -1,4 +1,4 @@
-#![feature(const_fn)]
+#![feature(clamp)]
 
 pub mod control;
 pub mod engine;
