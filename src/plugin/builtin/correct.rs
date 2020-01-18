@@ -34,10 +34,21 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         .zip(dst_g.elements_mut())
         .zip(dst_b.elements_mut())
     {
-        let y = src_r * 0.2126 + src_g * 0.7152 + src_b * 0.0722;
-        *dst_r = y;
-        *dst_g = y;
-        *dst_b = y;
+        let kr = 0.2126;
+        let kg = 0.7152;
+        let kb = 0.0722;
+
+        let y = src_r * kr + src_g * kg + src_b * kb;
+        let u = 0.5 * (src_b - y) / (1.0 - kb);
+        let v = 0.5 * (src_r - y) / (1.0 - kr);
+
+        let r = y + (2.0 - 2.0 * kr) * v;
+        let g = y - (kb / kg * (2.0 - 2.0 * kb)) * u - (kr / kg * (2.0 - 2.0 * kr)) * v; 
+        let b = y + (2.0 - 2.0 * kb) * u;
+
+        *dst_r = r;
+        *dst_g = g;
+        *dst_b = b;
     }
 
     Ok(out)
