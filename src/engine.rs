@@ -1,9 +1,8 @@
 use crate::{
-    control::Control,
     graph::{Dfs, Graph, Node},
     image::Image,
     plugin::{self, Plugin},
-    utils::{Id, Table},
+    utils::{Id, Table, Value},
 };
 
 #[derive(Default)]
@@ -13,7 +12,7 @@ pub struct Engine {
     pub nodes: Table<Node>,
     pub graph: Graph,
     pub dfs: Dfs,
-    pub controls: Table<Vec<Control>>,
+    pub controls: Table<Vec<Value>>,
     pub images: Table<Image>,
 }
 

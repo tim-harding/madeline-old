@@ -1,6 +1,7 @@
-use crate::control::{self, Control};
+use crate::control;
 use crate::image::{Channel, Image};
 use crate::plugin::{self, *};
+use crate::utils::Value;
 
 enum Parameters {
     R,
@@ -11,10 +12,10 @@ enum Parameters {
 
 pub fn create() -> Plugin {
     let controls = [
-        control::Desc::new("r", Control::Integer(0)),
-        control::Desc::new("g", Control::Integer(1)),
-        control::Desc::new("b", Control::Integer(2)),
-        control::Desc::new("a", Control::Integer(3)),
+        control::Desc::new("r", Value::Integer(0)),
+        control::Desc::new("g", Value::Integer(1)),
+        control::Desc::new("b", Value::Integer(2)),
+        control::Desc::new("a", Value::Integer(3)),
     ];
     let desc = plugin::Desc::new("shuffle", &["bg"], &controls);
     Plugin::new(render, desc)

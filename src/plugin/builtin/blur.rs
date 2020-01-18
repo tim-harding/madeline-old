@@ -1,7 +1,7 @@
-use crate::control::{self, Control};
+use crate::control;
 use crate::image::{Channel, Image};
 use crate::plugin::{self, *};
-use crate::utils::Vec2U;
+use crate::utils::{Vec2U, Value};
 use std::cmp::{max, min};
 
 enum Parameters {
@@ -9,7 +9,7 @@ enum Parameters {
 }
 
 pub fn create() -> Plugin {
-    let controls = [control::Desc::new("size", Control::Integer(0))];
+    let controls = [control::Desc::new("size", Value::Integer(0))];
     let desc = plugin::Desc::new("blur", &["bg"], &controls);
     Plugin::new(render, desc)
 }

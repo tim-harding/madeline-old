@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 use std::iter::Peekable;
 use std::slice::Iter;
+use crate::utils::Value;
+
+mod unpack;
+pub use unpack::*;
 
 type Tokens<'a> = Peekable<Iter<'a, Token>>;
 
@@ -23,18 +27,9 @@ impl<T> Pair<T> {
 }
 
 #[derive(Debug, Clone)]
-pub enum Value {
-    Text(String),
-    Real(f32),
-    Integer(isize),
-}
-
-#[derive(Debug, Clone)]
 pub enum Literal {
-    Text(String),
     Identifier(String),
-    Real(f32),
-    Integer(isize),
+    Value(Value),
 }
 
 #[derive(Debug, Clone)]
@@ -76,6 +71,8 @@ enum Token {
     Integer(isize),
 
     Glob,
+    True,
+    False,
 }
 
 pub fn parse(src: &str) -> Result<Graph, String> {
@@ -87,6 +84,8 @@ pub fn parse(src: &str) -> Result<Graph, String> {
 fn tokens(src: &str) -> Result<Vec<Token>, String> {
     let mut keywords = HashMap::new();
     keywords.insert("glob", Token::Glob);
+    keywords.insert("true", Token::True);
+    keywords.insert("false", Token::False);
 
     let mut tokens = Vec::new();
     let mut iter = src.chars().peekable();
@@ -117,7 +116,7 @@ fn tokens(src: &str) -> Result<Vec<Token>, String> {
                     let mut value = String::new();
                     value.push(other);
                     while let Some(c) = iter.peek() {
-                        if c.is_ascii_alphabetic() {
+                        if c.is_ascii_alphabetic() || *c == '_' {
                             value.push(iter.next().unwrap());
                         } else {
                             break;
@@ -240,12 +239,24 @@ fn pair<T>(iter: &mut Tokens, mapper: ValueMapper<T>) -> Result<Pair<T>, String>
     Ok(Pair::new(key, value))
 }
 
+fn literal(iter: &mut Tokens) -> Result<Literal, String> {
+    match iter.peek() {
+        Some(token) => Ok(match token {
+            Token::Identifier(_) => Literal::Identifier(identifier(iter)?),
+            _ => Literal::Value(value(iter)?),
+        }),
+        None => Err("Invalid value".into()),
+    }
+}
+
 fn value(iter: &mut Tokens) -> Result<Value, String> {
     match iter.next() {
         Some(token) => Ok(match token {
             Token::Text(value) => Value::Text(value.into()),
             Token::Real(value) => Value::Real(*value),
             Token::Integer(value) => Value::Integer(*value),
+            Token::True => Value::Boolean(true),
+            Token::False => Value::Boolean(false),
             other => return Err(format!("Invalid value: {:?}", other)),
         }),
         None => Err("Invalid value".into()),
@@ -256,19 +267,6 @@ fn identifier(iter: &mut Tokens) -> Result<String, String> {
     match iter.next() {
         Some(token) => Ok(match token {
             Token::Identifier(name) => name.into(),
-            other => return Err(format!("Invalid value: {:?}", other)),
-        }),
-        None => Err("Invalid value".into()),
-    }
-}
-
-fn literal(iter: &mut Tokens) -> Result<Literal, String> {
-    match iter.next() {
-        Some(token) => Ok(match token {
-            Token::Text(value) => Literal::Text(value.into()),
-            Token::Identifier(name) => Literal::Identifier(name.into()),
-            Token::Real(value) => Literal::Real(*value),
-            Token::Integer(value) => Literal::Integer(*value),
             other => return Err(format!("Invalid value: {:?}", other)),
         }),
         None => Err("Invalid value".into()),

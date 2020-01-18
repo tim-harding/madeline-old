@@ -1,7 +1,7 @@
-use crate::control::{self, Control};
+use crate::control;
 use crate::image::Image;
 use crate::plugin::*;
-use crate::utils::io;
+use crate::utils::{io, Value};
 use std::path::PathBuf;
 
 enum Parameters {
@@ -9,7 +9,7 @@ enum Parameters {
 }
 
 pub fn create() -> Plugin {
-    let controls = [control::Desc::new("filename", Control::Text("".into()))];
+    let controls = [control::Desc::new("filename", Value::Text("".into()))];
     let desc = plugin::Desc::new("load", &[], &controls);
     Plugin::new(render, desc)
 }

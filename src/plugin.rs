@@ -1,22 +1,22 @@
 mod plugins;
-use crate::utils::Enumeration;
+use crate::utils::{Enumeration, Value};
 pub use plugins::*;
 
 pub mod builtin;
 
-use crate::control::{self, Control};
+use crate::control;
 use crate::image::Image;
 use crate::plugin;
 
 pub type Inputs<'a> = &'a [Option<&'a Image>];
-pub type Controls<'a> = &'a [Control];
+pub type Controls<'a> = &'a [Value];
 pub type Render = fn(Inputs, Controls) -> Result<Image, String>;
 
 #[derive(Clone, Debug)]
 pub struct Desc {
     name: String,
     inputs: Enumeration,
-    controls: Vec<Control>,
+    controls: Vec<Value>,
     controls_map: Enumeration,
 }
 
@@ -49,7 +49,7 @@ impl Desc {
         self.inputs.len()
     }
 
-    pub fn controls(&self) -> Vec<Control> {
+    pub fn controls(&self) -> Vec<Value> {
         self.controls.clone()
     }
 }

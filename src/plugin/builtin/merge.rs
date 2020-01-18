@@ -1,7 +1,7 @@
-use crate::control::Control;
+use crate::control;
 use crate::image::Image;
 use crate::plugin::{self, *};
-use crate::utils::{Vec2I, Vec2U};
+use crate::utils::{Vec2I, Vec2U, Value};
 use std::iter::repeat;
 
 enum Parameters {
@@ -11,8 +11,8 @@ enum Parameters {
 
 pub fn create() -> Plugin {
     let controls = [
-        control::Desc::new("tx", Control::Integer(0)),
-        control::Desc::new("ty", Control::Integer(0)),
+        control::Desc::new("tx", Value::Integer(0)),
+        control::Desc::new("ty", Value::Integer(0)),
     ];
     let desc = plugin::Desc::new("merge", &["bg", "fg"], &controls);
     Plugin::new(render, desc)
