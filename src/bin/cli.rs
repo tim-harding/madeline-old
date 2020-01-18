@@ -75,17 +75,13 @@ fn unpack(mdl: &mdl::Graph) -> Result<Engine, String> {
 
     for option in mdl.options.iter() {
         match option.key.as_str() {
-            "viewing" => {
-                match &option.value {
-                    mdl::Literal::Identifier(name) => {
-                        match nodes.get(name) {
-                            Some(id) => engine.viewing = *id,
-                            _ => return Err("Could not resolve node name".into()),
-                        }
-                    },
-                    _ => return Err("Viewing global should be an identifier".into()),
-                }
-            }
+            "viewing" => match &option.value {
+                mdl::Literal::Identifier(name) => match nodes.get(name) {
+                    Some(id) => engine.viewing = *id,
+                    _ => return Err("Could not resolve node name".into()),
+                },
+                _ => return Err("Viewing global should be an identifier".into()),
+            },
             _ => return Err("Unrecognized global option".into()),
         }
     }
