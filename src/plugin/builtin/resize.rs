@@ -102,7 +102,7 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
 
                 let mut filter_acc = 0.0;
                 let mut px_acc = 0.0;
-                while lo < hi {
+                while lo < hi.ceil() {
                     let sample_pos = lo.floor().clamp(0.0, std::f32::MAX);
                     let sample_pos = min(src.desc().size.x - 1, sample_pos as usize);
                     let sample_index = x * src.desc().size.x + sample_pos;
