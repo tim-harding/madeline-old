@@ -9,4 +9,5 @@ pub fn populate_builtin(plugins: &mut Table<Plugin>) {
     plugins.insert(builtin::correct::create());
     plugins.insert(builtin::gamma::create());
     plugins.insert(builtin::resize::create());
+    plugins.insert(builtin::crop::create());
 }

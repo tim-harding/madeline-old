@@ -5,3 +5,4 @@ pub mod load;
 pub mod merge;
 pub mod shuffle;
 pub mod resize;
+pub mod crop;
