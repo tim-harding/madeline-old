@@ -27,16 +27,21 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let sx = controls[Parameters::SizeX as usize].as_uint();
     let sy = controls[Parameters::SizeY as usize].as_uint();
 
+    let h_buf = upscale_axis(&bg, sx);
+
     /*
-    let h_buf = resize_axis(&bg, sx);
-    let v_buf = resize_axis(&h_buf, sy);
+    let h_buf = downscale_axis(&bg, sx);
+    let v_buf = downscale_axis(&h_buf, sy);
     Ok(v_buf)
     */
+    Ok(h_buf)
+}
 
-    let scale_factor = bg.desc().size.x as f32 / sx as f32;
-    let buf_desc = image::Desc::new(Vec2U::new(sx, bg.desc().size.y), bg.channel_count());
+fn upscale_axis(src: &Image, dim: usize) -> Image {
+    let scale_factor = src.desc().size.x as f32 / dim as f32;
+    let buf_desc = image::Desc::new(Vec2U::new(dim, src.desc().size.y), src.channel_count());
     let mut buf = Image::from_desc(buf_desc); 
-    for (src_channel, dst_channel) in bg.channels().zip(buf.channels_mut()) {
+    for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         for (y, line) in dst_channel.lines_mut().enumerate() {
             for (x, px) in line.enumerate() {
                 let pos = x as f32 * scale_factor;
@@ -44,11 +49,11 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                 let base_x = pos as usize;
 
                 let idxn = max(0, pos as isize - 1) as usize;
-                let idx0 = min(bg.desc().size.x - 1, base_x + 0);
-                let idx1 = min(bg.desc().size.x - 1, base_x + 1);
-                let idx2 = min(bg.desc().size.x - 1, base_x + 2);
+                let idx0 = min(src.desc().size.x - 1, base_x + 0);
+                let idx1 = min(src.desc().size.x - 1, base_x + 1);
+                let idx2 = min(src.desc().size.x - 1, base_x + 2);
 
-                let idxy = y * bg.desc().size.x;
+                let idxy = y * src.desc().size.x;
 
                 let y0 = src_channel[idxn + idxy];
                 let y1 = src_channel[idx0 + idxy];
@@ -67,10 +72,10 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
             }
         }
     }
-    Ok(buf)
+    buf
 }
 
-fn resize_axis(src: &Image, dim: usize) -> Image {
+fn downscale_axis(src: &Image, dim: usize) -> Image {
     let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
     let mut buf = Image::from_desc(buf_desc);
 
