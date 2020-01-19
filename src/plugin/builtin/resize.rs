@@ -90,16 +90,16 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
         // the src buffer.
         //
         // But am I really? Just renaming the variable here.
-        for (x, line) in dst_channel.lines_mut().enumerate() {
-            for (y, px) in line.enumerate() {
-                let out_pos = x as f32 * scale_factor_x;
+        for (y, line) in dst_channel.lines_mut().enumerate() {
+            for (x, px) in line.enumerate() {
+                let out_pos = y as f32 * scale_factor_x;
                 let lo = (out_pos - offset_x).round() as isize;
                 let hi = (out_pos + offset_x).round() as isize;
 
                 let mut acc = 0.0;
                 for i in lo..hi {
                     let x_index = min(src.desc().size.x - 1, max(0, i) as usize);
-                    let index = y * src.desc().size.x + x_index;
+                    let index = x * src.desc().size.x + x_index;
                     let value = src_channel[index];
                     // Filter sampling should probably be done with relation
                     // to out_pos, in order to account for subpixel sampling
