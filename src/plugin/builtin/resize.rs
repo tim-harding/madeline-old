@@ -28,23 +28,24 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let sy = controls[Parameters::SizeY as usize].as_uint();
 
     let h_buf = upscale_axis(&bg, sx);
+    let v_buf = upscale_axis(&h_buf, sy);
 
     /*
     let h_buf = downscale_axis(&bg, sx);
     let v_buf = downscale_axis(&h_buf, sy);
     Ok(v_buf)
     */
-    Ok(h_buf)
+    Ok(v_buf)
 }
 
 fn upscale_axis(src: &Image, dim: usize) -> Image {
     let scale_factor = src.desc().size.x as f32 / dim as f32;
-    let buf_desc = image::Desc::new(Vec2U::new(dim, src.desc().size.y), src.channel_count());
+    let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
     let mut buf = Image::from_desc(buf_desc); 
     for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         for (y, line) in dst_channel.lines_mut().enumerate() {
             for (x, px) in line.enumerate() {
-                let pos = x as f32 * scale_factor;
+                let pos = y as f32 * scale_factor;
 
                 let base_x = pos as usize;
 
@@ -53,7 +54,7 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
                 let idx1 = min(src.desc().size.x - 1, base_x + 1);
                 let idx2 = min(src.desc().size.x - 1, base_x + 2);
 
-                let idxy = y * src.desc().size.x;
+                let idxy = x * src.desc().size.x;
 
                 let y0 = src_channel[idxn + idxy];
                 let y1 = src_channel[idx0 + idxy];
@@ -87,6 +88,8 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
         // Starting with x, which is out-of-order. However, since
         // dst is flipped over y=x, this yields in-order access to
         // the src buffer.
+        //
+        // But am I really? Just renaming the variable here.
         for (x, line) in dst_channel.lines_mut().enumerate() {
             for (y, px) in line.enumerate() {
                 let out_pos = x as f32 * scale_factor_x;
