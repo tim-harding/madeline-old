@@ -9,8 +9,6 @@ enum Parameters {
     SizeY,
 }
 
-const FILTER_WIDTH: f32 = 2.0;
-
 pub fn create() -> Plugin {
     let controls = [
         control::Desc::new("sx", Value::Integer(512)),
@@ -87,8 +85,7 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
     let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
     let mut buf = Image::from_desc(buf_desc);
 
-    let scale_factor = src.desc().size.x as f32 / dim as f32;
-    let width = FILTER_WIDTH * scale_factor;
+    let width = src.desc().size.x as f32 / dim as f32;
 
     for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         // Starting with x, which is out-of-order. However, since
@@ -96,23 +93,21 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
         // the src buffer.
         for x in 0..buf_desc.size.x {
             for y in 0..buf_desc.size.y {
-                let out_pos = y as f32 * scale_factor;
-                let mut lo = out_pos - width;
-                let hi = out_pos + width;
+                let center = y as f32 * width;
+                let lo = (center - width).floor() as isize;
+                let hi = (center + width).ceil() as isize;
 
                 let mut filter_acc = 0.0;
                 let mut px_acc = 0.0;
-                while lo < hi.ceil() {
-                    let sample_pos = lo.floor().clamp(0.0, std::f32::MAX);
-                    let sample_pos = min(src.desc().size.x - 1, sample_pos as usize);
-                    let sample_index = x * src.desc().size.x + sample_pos;
+                for i in lo..hi {
+                    let rel = i as f32 - center;
+                    let clipped = min(src.desc().size.x - 1, max(0, i) as usize);
+                    let sample_index = x * src.desc().size.x + clipped;
                     let sample = src_channel[sample_index];
 
-                    let filter = filter(lo, width);
+                    let filter = filter(rel, width);
                     px_acc += sample * filter;
                     filter_acc += filter;
-
-                    lo += 1.0;
                 }
 
                 let out_index = y * buf_desc.size.x + x;
@@ -124,9 +119,9 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
     buf
 }
 
-fn filter(x: f32, radius: f32) -> f32 {
+fn filter(src: f32, radius: f32) -> f32 {
     // Sawtooth
-    let x = 1.0 - (x - radius).abs() / radius;
+    let x = (1.0 - src.abs() / radius).clamp(0.0, 1.0);
 
     // Smoothstep
     let rcp = 1.0 - x;
