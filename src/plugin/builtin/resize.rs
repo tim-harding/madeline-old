@@ -27,10 +27,47 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let sx = controls[Parameters::SizeX as usize].as_uint();
     let sy = controls[Parameters::SizeY as usize].as_uint();
 
+    /*
     let h_buf = resize_axis(&bg, sx);
     let v_buf = resize_axis(&h_buf, sy);
-
     Ok(v_buf)
+    */
+
+    let scale_factor = bg.desc().size.x as f32 / sx as f32;
+    let buf_desc = image::Desc::new(Vec2U::new(sx, bg.desc().size.y), bg.channel_count());
+    let mut buf = Image::from_desc(buf_desc); 
+    for (src_channel, dst_channel) in bg.channels().zip(buf.channels_mut()) {
+        for (y, line) in dst_channel.lines_mut().enumerate() {
+            for (x, px) in line.enumerate() {
+                let pos = x as f32 * scale_factor;
+
+                let base_x = pos as usize;
+
+                let idxn = max(0, pos as isize - 1) as usize;
+                let idx0 = min(bg.desc().size.x - 1, base_x + 0);
+                let idx1 = min(bg.desc().size.x - 1, base_x + 1);
+                let idx2 = min(bg.desc().size.x - 1, base_x + 2);
+
+                let idxy = y * bg.desc().size.x;
+
+                let y0 = src_channel[idxn + idxy];
+                let y1 = src_channel[idx0 + idxy];
+                let y2 = src_channel[idx1 + idxy];
+                let y3 = src_channel[idx2 + idxy];
+
+                let a0 = -0.5 * y0 + 1.5 * y1 - 1.5 * y2 + 0.5 * y3;
+                let a1 = y0 - 2.5 * y1 + 2.0 * y2 - 0.5 * y3;
+                let a2 = -0.5 * y0 + 0.5 * y2;
+                let a3 = y1;
+
+                let frac = pos.fract();
+                let frac2 = frac * frac;
+
+                *px = a0 * frac2 * frac + a1 * frac2 + a2 * frac + a3;
+            }
+        }
+    }
+    Ok(buf)
 }
 
 fn resize_axis(src: &Image, dim: usize) -> Image {
@@ -56,6 +93,8 @@ fn resize_axis(src: &Image, dim: usize) -> Image {
                     let x_index = min(src.desc().size.x - 1, max(0, i) as usize);
                     let index = y * src.desc().size.x + x_index;
                     let value = src_channel[index];
+                    // Filter sampling should probably be done with relation
+                    // to out_pos, in order to account for subpixel sampling
                     let filter = sample((i - lo) as f32, offset_x);
                     acc += value * filter;
                 }
