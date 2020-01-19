@@ -27,15 +27,18 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let sx = controls[Parameters::SizeX as usize].as_uint();
     let sy = controls[Parameters::SizeY as usize].as_uint();
 
-    let h_buf = upscale_axis(&bg, sx);
-    let v_buf = upscale_axis(&h_buf, sy);
+    let h_buf = scale_axis(&bg, sx);
+    let v_buf = scale_axis(&h_buf, sy);
 
-    /*
-    let h_buf = downscale_axis(&bg, sx);
-    let v_buf = downscale_axis(&h_buf, sy);
     Ok(v_buf)
-    */
-    Ok(v_buf)
+}
+
+fn scale_axis(src: &Image, dim: usize) -> Image {
+    if dim > src.desc().size.y {
+        upscale_axis(src, dim)
+    } else {
+        downscale_axis(src, dim)
+    }
 }
 
 fn upscale_axis(src: &Image, dim: usize) -> Image {
@@ -43,8 +46,8 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
     let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
     let mut buf = Image::from_desc(buf_desc); 
     for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
-        for (y, line) in dst_channel.lines_mut().enumerate() {
-            for (x, px) in line.enumerate() {
+        for x in 0..buf_desc.size.x {
+            for y in 0..buf_desc.size.y {
                 let pos = y as f32 * scale_factor;
 
                 let base_x = pos as usize;
@@ -69,7 +72,9 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
                 let frac = pos.fract();
                 let frac2 = frac * frac;
 
-                *px = a0 * frac2 * frac + a1 * frac2 + a2 * frac + a3;
+                let out_index = y * buf_desc.size.x + x;
+                let px = a0 * frac2 * frac + a1 * frac2 + a2 * frac + a3;
+                dst_channel[out_index] = px;
             }
         }
     }
@@ -88,10 +93,8 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
         // Starting with x, which is out-of-order. However, since
         // dst is flipped over y=x, this yields in-order access to
         // the src buffer.
-        //
-        // But am I really? Just renaming the variable here.
-        for (y, line) in dst_channel.lines_mut().enumerate() {
-            for (x, px) in line.enumerate() {
+        for x in 0..buf_desc.size.x {
+            for y in 0..buf_desc.size.y {
                 let out_pos = y as f32 * scale_factor_x;
                 let lo = (out_pos - offset_x).round() as isize;
                 let hi = (out_pos + offset_x).round() as isize;
@@ -107,7 +110,8 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
                     acc += value * filter;
                 }
 
-                *px = acc;
+                let out_index = y * buf_desc.size.x + x;
+                dst_channel[out_index] = acc;
             }
         }
     }
