@@ -9,6 +9,8 @@ enum Parameters {
     SizeY,
 }
 
+const FILTER_WIDTH: f32 = 2.0;
+
 pub fn create() -> Plugin {
     let controls = [
         control::Desc::new("sx", Value::Integer(512)),
@@ -85,9 +87,8 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
     let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
     let mut buf = Image::from_desc(buf_desc);
 
-    let filter_width = 2.0f32;
-    let scale_factor_x = src.desc().size.x as f32 / dim as f32;
-    let offset_x = filter_width * scale_factor_x;
+    let scale_factor = src.desc().size.x as f32 / dim as f32;
+    let width = FILTER_WIDTH * scale_factor;
 
     for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         // Starting with x, which is out-of-order. However, since
@@ -95,23 +96,27 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
         // the src buffer.
         for x in 0..buf_desc.size.x {
             for y in 0..buf_desc.size.y {
-                let out_pos = y as f32 * scale_factor_x;
-                let lo = (out_pos - offset_x).round() as isize;
-                let hi = (out_pos + offset_x).round() as isize;
+                let out_pos = y as f32 * scale_factor;
+                let mut lo = out_pos - width;
+                let hi = out_pos + width;
 
-                let mut acc = 0.0;
-                for i in lo..hi {
-                    let x_index = min(src.desc().size.x - 1, max(0, i) as usize);
-                    let index = x * src.desc().size.x + x_index;
-                    let value = src_channel[index];
-                    // Filter sampling should probably be done with relation
-                    // to out_pos, in order to account for subpixel sampling
-                    let filter = sample((i - lo) as f32, offset_x);
-                    acc += value * filter;
+                let mut filter_acc = 0.0;
+                let mut px_acc = 0.0;
+                while lo < hi {
+                    let sample_pos = lo.floor().clamp(0.0, std::f32::MAX);
+                    let sample_pos = min(src.desc().size.x - 1, sample_pos as usize);
+                    let sample_index = x * src.desc().size.x + sample_pos;
+                    let sample = src_channel[sample_index];
+
+                    let filter = filter(lo, width);
+                    px_acc += sample * filter;
+                    filter_acc += filter;
+
+                    lo += 1.0;
                 }
 
                 let out_index = y * buf_desc.size.x + x;
-                dst_channel[out_index] = acc;
+                dst_channel[out_index] = px_acc / filter_acc;
             }
         }
     }
@@ -119,11 +124,11 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
     buf
 }
 
-fn sample(x: f32, radius: f32) -> f32 {
-    gauss(1.0 - (x - radius).abs() / radius) / radius
-}
+fn filter(x: f32, radius: f32) -> f32 {
+    // Sawtooth
+    let x = 1.0 - (x - radius).abs() / radius;
 
-fn gauss(x: f32) -> f32 {
+    // Smoothstep
     let rcp = 1.0 - x;
     rcp * x * x + x * (1.0 - rcp * rcp)
 }
