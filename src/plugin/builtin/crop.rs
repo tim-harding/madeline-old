@@ -53,7 +53,11 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                 let src_y = y as isize - top;
                 let src_idx = src_y * src_sz_x + src_x;
                 let black = src_x < 0 || src_x > src_sz_x - 1 || src_y < 0 || src_y > src_sz_y - 1;
-                let sample = if black { 0.0 } else { src_channel[src_idx as usize] };
+                let sample = if black {
+                    0.0
+                } else {
+                    src_channel[src_idx as usize]
+                };
                 *px = sample;
             }
         }

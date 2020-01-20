@@ -1,15 +1,56 @@
-use madeline::{mdl, utils::io};
+use madeline::{mdlc, utils::io, engine::Engine};
 use std::path::Path;
-use std::env;
 
 fn main() -> Result<(), String> {
-    if env::args().count() != 2 {
-        return Err("Usage: madeline {comp.mdl}".into());
+    let matches = ::clap::App::new("Madeline")
+        .version("0.1")
+        .author("Tim Harding <tim@timharding.co>")
+        .about("Node-based image compositor")
+        .setting(clap::AppSettings::ArgRequiredElseHelp)
+        .arg(
+            ::clap::Arg::with_name("comp_file")
+                .short("c")
+                .long("comp")
+                .value_name("FILE")
+                .takes_value(true)
+                .help("Sets the .mdl file to render"),
+        )
+        .arg(
+            ::clap::Arg::with_name("output")
+                .short("o")
+                .long("out")
+                .value_name("FILE")
+                .takes_value(true)
+                .help("Sets the output image file"),
+        )
+        .arg(
+            ::clap::Arg::with_name("interactive")
+                .short("i")
+                .long("interactive")
+                .help("Starts a Madeline console session"),
+        )
+        .get_matches();
+
+    let parser = mdlc::Parser::new();
+    let mut engine = Engine::new();
+    match matches.value_of("comp_file") {
+        Some(comp) => {
+            let src = std::fs::read_to_string(comp)
+                .map_err(|_| "Could not load comp file".to_string())?;
+            for line in src.lines() {
+                let statement = parser.parse(line);
+                println!("{:?}", statement);
+            }
+            /*
+            let comp = engine.render()?;
+            let out = matches.value_of("output").unwrap_or("data/merge.png");
+            io::save(Path::new(out), comp)
+            */
+            Ok(())
+        }
+        None => {
+            // Interactive
+            Ok(())
+        }
     }
-    let mdl = env::args().last().unwrap();
-    let ast = std::fs::read_to_string(mdl).map_err(|_| "".to_string())?;
-    let content = mdl::parse(&ast)?;
-    let mut engine = mdl::unpack(&content)?;
-    let comp = engine.render()?;
-    io::save(Path::new("data/merge.png"), comp)
 }

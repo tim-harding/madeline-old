@@ -2,7 +2,7 @@ use crate::control;
 use crate::image::{self, Image};
 use crate::plugin::{self, *};
 use crate::utils::{Value, Vec2U};
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 
 enum Parameters {
     SizeX,
@@ -44,7 +44,7 @@ fn scale_axis(src: &Image, dim: usize) -> Image {
 fn upscale_axis(src: &Image, dim: usize) -> Image {
     let scale_factor = src.desc().size.x as f32 / dim as f32;
     let buf_desc = image::Desc::new(Vec2U::new(src.desc().size.y, dim), src.channel_count());
-    let mut buf = Image::from_desc(buf_desc); 
+    let mut buf = Image::from_desc(buf_desc);
     for (src_channel, dst_channel) in src.channels().zip(buf.channels_mut()) {
         for x in 0..buf_desc.size.x {
             for y in 0..buf_desc.size.y {
