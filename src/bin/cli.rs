@@ -38,15 +38,14 @@ fn main() -> Result<(), String> {
             let src = std::fs::read_to_string(comp)
                 .map_err(|_| "Could not load comp file".to_string())?;
             for line in src.lines() {
-                let statement = parser.parse(line);
-                println!("{:?}", statement);
+                match parser.parse(line) {
+                    Ok(statement) => mdlc::apply(&mut engine, &statement)?,
+                    Err(e) => println!("{}", e),
+                }
             }
-            /*
             let comp = engine.render()?;
             let out = matches.value_of("output").unwrap_or("data/merge.png");
             io::save(Path::new(out), comp)
-            */
-            Ok(())
         }
         None => {
             // Interactive

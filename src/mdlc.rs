@@ -1,7 +1,8 @@
 use crate::utils::Value;
-use std::{collections::HashMap, iter::Peekable, slice::Iter, str::Chars};
+use std::{collections::HashMap, iter::Peekable, slice::Iter, str::Chars, fmt};
 
-pub mod unpack;
+mod unpack;
+pub use unpack::apply;
 
 type TokenMap = HashMap<String, Token>;
 type Tokens<'a> = Peekable<Iter<'a, Token>>;
@@ -39,6 +40,12 @@ pub enum Literal {
 pub struct Member {
     node: String,
     attr: String,
+}
+
+impl fmt::Display for Member {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}.{}", self.node, self.attr)
+    }
 }
 
 #[derive(Debug, Clone)]

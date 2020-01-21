@@ -39,7 +39,7 @@ new gamma delinear
 delinear.bg <- cc
 delinear.invert = true
 
-glob viewing = delinearize
+glob viewing = delinear
 
 
 ######################
