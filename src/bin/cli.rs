@@ -1,4 +1,4 @@
-use madeline::{mdlc, utils::io, engine::Engine};
+use madeline::{engine::Engine, mdlc, utils::io};
 use std::path::Path;
 
 fn main() -> Result<(), String> {

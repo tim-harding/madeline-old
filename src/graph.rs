@@ -27,12 +27,12 @@ impl Graph {
         self.0.delete(id);
     }
 
-    pub fn connect(&mut self, from: Id, to: Id, input: usize, dfs: &mut Dfs) {
-        if let Some(from) = self.0.get_mut(from) {
-            from[input] = Some(to);
+    pub fn connect(&mut self, downstream: Id, upstream: Id, input: usize, dfs: &mut Dfs) {
+        if let Some(from) = self.0.get_mut(downstream) {
+            from[input] = Some(upstream);
         }
-        if dfs.has_cycle(from, self) {
-            self.disconnect(from, input);
+        if dfs.has_cycle(downstream, self) {
+            self.disconnect(downstream, input);
         }
     }
 

@@ -8,6 +8,8 @@ use crate::control;
 use crate::image::Image;
 use crate::plugin;
 
+// Desc could really be replaced with just plugin
+
 pub type Inputs<'a> = &'a [Option<&'a Image>];
 pub type Controls<'a> = &'a [Value];
 pub type Render = fn(Inputs, Controls) -> Result<Image, String>;

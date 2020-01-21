@@ -1,6 +1,8 @@
 use crate::utils::Value;
 use std::{collections::HashMap, iter::Peekable, slice::Iter, str::Chars};
 
+pub mod unpack;
+
 type TokenMap = HashMap<String, Token>;
 type Tokens<'a> = Peekable<Iter<'a, Token>>;
 
