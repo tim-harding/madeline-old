@@ -49,11 +49,14 @@ impl Engine {
         self.nodes.delete(id);
         self.graph.delete_node(id);
         self.controls.delete(id);
-        self.node_names = self
+
+        let to_remove = self
             .node_names
-            .into_iter()
-            .filter(|&(_, v)| v != id)
-            .collect();
+            .iter()
+            .filter_map(|(k, v)| if *v == id { Some(k.clone()) } else { None })
+            .nth(0)
+            .unwrap();
+        self.node_names.remove(&to_remove);
     }
 
     pub fn render(&mut self) -> Result<&Image, String> {

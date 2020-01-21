@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    engine::Engine,
-    graph::Node,
-};
+use crate::{engine::Engine, graph::Node};
 
 pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
     match statement {
@@ -27,20 +24,19 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
 
             match engine.controls.get_mut(*node_id) {
                 Some(controls) => {
-                    let control = controls[control_index];
-                    match (control, value) {
-                        (Value::Text(_), Value::Text(_)) => Ok(control = *value),
-                        (Value::Boolean(_), Value::Boolean(_)) => Ok(control = *value),
-                        (Value::Integer(_), Value::Integer(_)) => Ok(control = *value),
-                        (Value::Real(_), Value::Real(_)) => Ok(control = *value),
-                        (Value::Real(_), Value::Integer(int)) => {
-                            Ok(control = Value::Real(*int as f32))
-                        }
-                        _ => Err("Attribute type does not match assignment".to_string()),
-                    }
+                    let control = &controls[control_index];
+                    controls[control_index] = match (control, value) {
+                        (Value::Text(_), Value::Text(_)) => value.clone(),
+                        (Value::Boolean(_), Value::Boolean(_)) => value.clone(),
+                        (Value::Integer(_), Value::Integer(_)) => value.clone(),
+                        (Value::Real(_), Value::Real(_)) => value.clone(),
+                        (Value::Real(_), Value::Integer(int)) => Value::Real(*int as f32),
+                        _ => return Err("Attribute type does not match assignment".to_string()),
+                    };
                 }
                 None => unreachable!(),
             }
+            Ok(())
         }
 
         Statement::New { kind, name } => {
@@ -55,10 +51,10 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
 
         Statement::Delete { name } => {
             let id = match engine.node_names.get(name) {
-                Some(id) => Ok(id),
+                Some(id) => Ok(*id),
                 None => Err("Node name not found".to_string()),
             }?;
-            engine.delete_node(*id);
+            engine.delete_node(id);
             Ok(())
         }
 

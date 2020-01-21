@@ -12,7 +12,7 @@ pub fn unpack(mdl: &Graph) -> Result<Engine, String> {
             .r#where(|plug| plug.desc().name() == def.kind)
             .ok_or(format!("Could not resolve plugin: {}", def.kind))?;
 
-        let id = engine.insert_node(graph::Node::new(plugin_id));
+        let id = engine.insert_node(graph::Node::new(plugin_id), "".to_string());
         let plugin = engine.plugins.get_ref(plugin_id).unwrap();
         if let Some(_old) = nodes.insert(&def.name, id) {
             return Err(format!("Duplicate node name: {}", &def.name));
