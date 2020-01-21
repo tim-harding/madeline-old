@@ -1,0 +1,38 @@
+glob viewing: delinearize
+
+load kitty () {
+    filename: "data/kitty.png",
+}
+
+load tree () {
+    filename: "data/tree.png",
+}
+
+gamma linearize_tree (bg: tree) { }
+gamma linearize_kitty (bg: kitty) { }
+
+merge combine (bg: linearize_tree, fg: linearize_kitty) { 
+    tx: 200,
+    ty: 200,
+}
+
+shuffle weird (bg: combine) {
+    r: 1,
+    g: 2,
+    b: 0,
+    a: 3,
+}
+
+blur gaussian (bg: weird) {
+    size: 24,
+}
+
+correct cc (bg: gaussian) { 
+    hue_rotation: 3.14,
+    saturation: 0.5,
+    exposure: 1.5,
+}
+
+gamma delinearize (bg: cc) {
+    invert: true,
+}

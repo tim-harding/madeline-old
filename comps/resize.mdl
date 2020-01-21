@@ -1,0 +1,10 @@
+glob viewing: downscale
+
+load kitty () {
+    filename: "data/kitty.png",
+}
+
+resize downscale (bg: kitty) {
+    sx: 64, 
+    sy: 64, 
+}

@@ -1,0 +1,52 @@
+# I'm a comment!
+
+new load kitty
+kitty.filename = "data/kitty.png"
+
+new load tree
+tree.filename = "data/tree.png"
+
+new gamma linear_tree
+linear_tree.bg <- tree
+
+new gamma linear_kitty
+linear_kitty.bg <- kitty
+
+new merge combine
+combine.bg <- linear_tree
+combine.fg <- linear_kitty
+combine.tx = 200
+combine.ty = 200
+
+new shuffle weird
+weird.bg <- combine
+weird.r = 1
+weird.g = 2
+weird.b = 0
+weird.a = 3
+
+new blur gaussian
+gaussian.bg <- weird
+gaussian.size = 24
+
+new correct cc 
+cc.bg <- gaussian
+cc.hue_rotation = 3.14
+cc.saturation = 0.5
+cc.exposure = 1.5
+
+new gamma delinear
+delinear.bg <- cc
+delinear.invert = true
+
+glob viewing = delinearize
+
+
+######################
+# Additions for later:
+
+# Enumerations: 
+# gaussian.kernel = BOX
+
+# Expressions:
+# combine.tx = pow(combine.ty + 20, 0.5) % 100
