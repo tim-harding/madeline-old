@@ -5,6 +5,5 @@ pub mod engine;
 pub mod graph;
 pub mod image;
 pub mod mdl;
-pub mod mdlc;
 pub mod plugin;
 pub mod utils;

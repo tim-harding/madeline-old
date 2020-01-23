@@ -1,4 +1,4 @@
-use madeline::{engine::Engine, mdlc, utils::io};
+use madeline::{engine::Engine, mdl, utils::io};
 use std::path::Path;
 
 fn main() -> Result<(), String> {
@@ -31,7 +31,7 @@ fn main() -> Result<(), String> {
         )
         .get_matches();
 
-    let parser = mdlc::Parser::new();
+    let parser = mdl::Parser::new();
     let mut engine = Engine::new();
     match matches.value_of("comp_file") {
         Some(comp) => {
@@ -39,7 +39,7 @@ fn main() -> Result<(), String> {
                 .map_err(|_| "Could not load comp file".to_string())?;
             for line in src.lines() {
                 match parser.parse(line) {
-                    Ok(statement) => mdlc::apply(&mut engine, &statement)?,
+                    Ok(statement) => mdl::apply(&mut engine, &statement)?,
                     Err(e) => println!("{}", e),
                 }
             }
@@ -48,7 +48,13 @@ fn main() -> Result<(), String> {
             io::save(Path::new(out), comp)
         }
         None => {
-            // Interactive
+            let mut line = String::new();
+            while let Ok(_) = std::io::stdin().read_line(&mut line) {
+                match parser.parse(&line) {
+                    Ok(statement) => mdl::apply(&mut engine, &statement)?,
+                    Err(e) => println!("{}", e),
+                }
+            }
             Ok(())
         }
     }

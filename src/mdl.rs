@@ -1,29 +1,33 @@
 use crate::utils::Value;
-use std::collections::HashMap;
-use std::iter::Peekable;
-use std::slice::Iter;
+use std::{collections::HashMap, iter::Peekable, slice::Iter, str::Chars, fmt};
 
 mod unpack;
-pub use unpack::*;
+pub use unpack::apply;
 
+type TokenMap = HashMap<String, Token>;
 type Tokens<'a> = Peekable<Iter<'a, Token>>;
 
-#[derive(Default, Debug, Clone)]
-pub struct Graph {
-    pub nodes: Vec<Node>,
-    pub options: Vec<Pair<Literal>>,
-}
-
 #[derive(Debug, Clone)]
-pub struct Pair<T> {
-    pub key: String,
-    pub value: T,
-}
-
-impl<T> Pair<T> {
-    pub fn new(key: String, value: T) -> Self {
-        Self { key, value }
-    }
+pub enum Statement {
+    Assign {
+        member: Member,
+        value: Value,
+    },
+    New {
+        kind: String,
+        name: String,
+    },
+    Delete {
+        name: String,
+    },
+    Glob {
+        attr: String,
+        value: Literal,
+    },
+    Wire {
+        downstream: Member,
+        upstream: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -33,242 +37,213 @@ pub enum Literal {
 }
 
 #[derive(Debug, Clone)]
-pub struct Node {
-    pub kind: String,
-    pub name: String,
-    pub inputs: Vec<Pair<String>>,
-    pub attributes: Vec<Pair<Value>>,
+pub struct Member {
+    node: String,
+    attr: String,
 }
 
-impl Node {
-    pub fn new(
-        kind: String,
-        name: String,
-        inputs: Vec<Pair<String>>,
-        attributes: Vec<Pair<Value>>,
-    ) -> Self {
-        Self {
-            kind,
-            name,
-            inputs,
-            attributes,
-        }
+impl fmt::Display for Member {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}.{}", self.node, self.attr)
     }
 }
 
 #[derive(Debug, Clone)]
 enum Token {
-    Colon,
-    Comma,
-    ParenL,
-    ParenR,
-    CurlyL,
-    CurlyR,
-
     Identifier(String),
-    Text(String),
-    Real(f32),
-    Integer(isize),
+    Value(Value),
+
+    Equal,
+    Dot,
+    Arrow,
 
     Glob,
-    True,
-    False,
+    New,
+    Delete,
 }
 
-pub fn parse(src: &str) -> Result<Graph, String> {
-    let tokens = tokens(src)?;
-    let mut iter = tokens.iter().peekable();
-    graph(&mut iter)
+#[derive(Debug, Clone)]
+pub struct Parser {
+    keywords: TokenMap,
+    tokens: Vec<Token>,
 }
 
-fn tokens(src: &str) -> Result<Vec<Token>, String> {
-    let mut keywords = HashMap::new();
-    keywords.insert("glob", Token::Glob);
-    keywords.insert("true", Token::True);
-    keywords.insert("false", Token::False);
+impl Parser {
+    pub fn new() -> Self {
+        let mut keywords = HashMap::new();
+        keywords.insert("glob".into(), Token::Glob);
+        keywords.insert("new".into(), Token::New);
+        keywords.insert("delete".into(), Token::Delete);
+        keywords.insert("true".into(), Token::Value(Value::Boolean(true)));
+        keywords.insert("false".into(), Token::Value(Value::Boolean(false)));
+        Self {
+            keywords,
+            tokens: Vec::new(),
+        }
+    }
 
-    let mut tokens = Vec::new();
+    pub fn parse(&self, src: &str) -> Result<Statement, String> {
+        let tokens = tokenize(src, &self.keywords)?;
+        parse(&tokens)
+    }
+}
+
+fn tokenize(src: &str, keywords: &TokenMap) -> Result<Vec<Token>, String> {
+    let mut tokens = Vec::with_capacity(16);
     let mut iter = src.chars().peekable();
     while let Some(c) = iter.next() {
         tokens.push(match c {
-            ':' => Token::Colon,
-            ',' => Token::Comma,
-            '(' => Token::ParenL,
-            ')' => Token::ParenR,
-            '{' => Token::CurlyL,
-            '}' => Token::CurlyR,
-            '#' => {
-                iter.find(|c| *c == '\n');
-                continue;
-            }
+            '=' => Ok(Token::Equal),
+            '.' => Ok(Token::Dot),
+            '<' => match iter.next() {
+                Some('-') => Ok(Token::Arrow),
+                _ => Err("Unrecognized token".into()),
+            },
+            '#' => break,
             '"' => {
-                let mut value = String::new();
-                while let Some(c) = iter.next() {
-                    match c {
-                        '"' => break,
-                        other => value.push(other),
-                    }
-                }
-                Token::Text(value)
+                let text = consume(&mut iter, |c| c != '"', None);
+                iter.next();
+                Ok(Token::Value(Value::Text(text)))
             }
-            other => {
-                if other.is_ascii_alphabetic() {
-                    let mut value = String::new();
-                    value.push(other);
-                    while let Some(c) = iter.peek() {
-                        if c.is_ascii_alphabetic() || *c == '_' {
-                            value.push(iter.next().unwrap());
-                        } else {
-                            break;
-                        }
+            c => {
+                if c.is_ascii_alphabetic() {
+                    let text = consume(&mut iter, |c| c.is_ascii_alphabetic() || c == '_', Some(c));
+                    match keywords.get(&text) {
+                        Some(token) => Ok(token.clone()),
+                        None => Ok(Token::Identifier(text)),
                     }
-                    match keywords.get(value.as_str()) {
-                        Some(token) => token.clone(),
-                        None => Token::Identifier(value),
-                    }
-                } else if other.is_ascii_digit() || other == '-' {
-                    let mut value = String::new();
-                    value.push(other);
-                    while let Some(c) = iter.peek() {
-                        if c.is_ascii_digit() || *c == '.' {
-                            value.push(iter.next().unwrap());
-                        } else {
-                            break;
-                        }
-                    }
-                    match value.parse::<isize>() {
-                        Ok(value) => Token::Integer(value),
-                        Err(_) => match value.parse::<f32>() {
-                            Ok(value) => Token::Real(value),
-                            Err(_) => return Err("Could not parse number".into()),
+                } else if c.is_ascii_digit() || c == '-' {
+                    let text = consume(&mut iter, |c| c.is_ascii_digit() || c == '.', Some(c));
+                    match text.parse::<isize>() {
+                        Ok(value) => Ok(Token::Value(Value::Integer(value))),
+                        Err(_) => match text.parse::<f32>() {
+                            Ok(value) => Ok(Token::Value(Value::Real(value))),
+                            Err(_) => Err("Could not parse number".into()),
                         },
                     }
-                } else if other.is_ascii_whitespace() {
+                } else if c.is_ascii_whitespace() {
                     continue;
                 } else {
-                    return Err("Grammer does not match".into());
+                    Err("Unrecognized token".to_string())
                 }
             }
-        });
+        }?);
     }
     Ok(tokens)
 }
 
-fn graph(iter: &mut Tokens) -> Result<Graph, String> {
-    let mut graph = Graph::default();
-    while let Some(token) = iter.peek() {
-        match token {
-            Token::Glob => {
-                iter.next();
-                graph.options.push(pair(iter, literal)?);
-            }
-            _ => graph.nodes.push(node(iter)?),
+fn consume(iter: &mut Peekable<Chars>, matcher: fn(char) -> bool, seed: Option<char>) -> String {
+    let mut text = String::new();
+    if let Some(seed) = seed {
+        text.push(seed);
+    }
+    while let Some(c) = iter.peek() {
+        if matcher(*c) {
+            text.push(iter.next().unwrap())
+        } else {
+            break;
         }
     }
-    Ok(graph)
+    text
 }
 
-fn node(iter: &mut Tokens) -> Result<Node, String> {
-    let kind = match iter.next() {
-        Some(Token::Identifier(name)) => name.into(),
-        _ => return Err("Missing node kind".into()),
-    };
-
-    let name = match iter.next() {
-        Some(Token::Identifier(name)) => name.into(),
-        _ => return Err("Missing node name".into()),
-    };
-
-    match iter.next() {
-        Some(Token::ParenL) => {}
-        _ => return Err("Missing node inputs".into()),
-    };
-
-    let inputs = pairs(iter, identifier)?;
-
-    match iter.next() {
-        Some(Token::ParenR) => {}
-        _ => return Err("Unclosed node inputs".into()),
-    };
-
-    match iter.next() {
-        Some(Token::CurlyL) => {}
-        _ => return Err("Missing node attributes".into()),
-    };
-
-    let attributes = pairs(iter, value)?;
-
-    match iter.next() {
-        Some(Token::CurlyR) => {}
-        _ => return Err("Unclosed node attributes".into()),
-    };
-
-    Ok(Node::new(kind, name, inputs, attributes))
-}
-
-fn pairs<T>(iter: &mut Tokens, mapper: ValueMapper<T>) -> Result<Vec<Pair<T>>, String> {
-    let mut pairs = Vec::new();
-    while let Some(token) = iter.peek() {
-        match token {
-            Token::Identifier(_) => pairs.push(pair(iter, mapper)?),
-            _ => break,
-        }
-    }
-    Ok(pairs)
-}
-
-type ValueMapper<T> = fn(&mut Tokens) -> Result<T, String>;
-
-fn pair<T>(iter: &mut Tokens, mapper: ValueMapper<T>) -> Result<Pair<T>, String> {
-    let key = match iter.next() {
-        Some(Token::Identifier(name)) => name.into(),
-        _ => return Err("Missing pair key".into()),
-    };
-
-    match iter.next() {
-        Some(Token::Colon) => {}
-        _ => return Err("Missing pair separator".into()),
-    };
-
-    let value = mapper(iter)?;
-
-    if let Some(Token::Comma) = iter.peek() {
-        iter.next();
-    }
-
-    Ok(Pair::new(key, value))
-}
-
-fn literal(iter: &mut Tokens) -> Result<Literal, String> {
+// TODO: Better help for incorrect statements
+fn parse(tokens: &[Token]) -> Result<Statement, String> {
+    let mut iter = tokens.iter().peekable();
     match iter.peek() {
-        Some(token) => Ok(match token {
-            Token::Identifier(_) => Literal::Identifier(identifier(iter)?),
-            _ => Literal::Value(value(iter)?),
-        }),
-        None => Err("Invalid value".into()),
+        Some(token) => match token {
+            Token::Glob => glob(&mut iter).map_err(|_| "Invalid glob".into()),
+            Token::New => new(&mut iter).map_err(|_| "Invalid new".into()),
+            Token::Delete => delete(&mut iter).map_err(|_| "Invalid delete".into()),
+            Token::Identifier(_) => set(&mut iter),
+            _ => Err("Unrecognized statement".into()),
+        },
+        None => Err("Empty statement".into()),
     }
 }
 
-fn value(iter: &mut Tokens) -> Result<Value, String> {
+fn glob(iter: &mut Tokens) -> Result<Statement, ()> {
+    iter.next();
+    let attr = ident(iter)?;
+    equal(iter)?;
+    let value = literal(iter)?;
+    Ok(Statement::Glob { attr, value })
+}
+
+fn new(iter: &mut Tokens) -> Result<Statement, ()> {
+    iter.next();
+    let kind = ident(iter)?;
+    let name = ident(iter)?;
+    Ok(Statement::New { kind, name })
+}
+
+fn delete(iter: &mut Tokens) -> Result<Statement, ()> {
+    iter.next();
+    let name = ident(iter)?;
+    Ok(Statement::Delete { name })
+}
+
+fn set(iter: &mut Tokens) -> Result<Statement, String> {
+    let member = member(iter).map_err(|_| "Unrecognized member".to_string())?;
     match iter.next() {
-        Some(token) => Ok(match token {
-            Token::Text(value) => Value::Text(value.into()),
-            Token::Real(value) => Value::Real(*value),
-            Token::Integer(value) => Value::Integer(*value),
-            Token::True => Value::Boolean(true),
-            Token::False => Value::Boolean(false),
-            other => return Err(format!("Invalid value: {:?}", other)),
-        }),
-        None => Err("Invalid value".into()),
+        Some(Token::Arrow) => wire(iter, member).map_err(|_| "Invalid wire".into()),
+        Some(Token::Equal) => assign(iter, member).map_err(|_| "Invalid assignment".into()),
+        _ => Err("Unrecognized member statement".into()),
     }
 }
 
-fn identifier(iter: &mut Tokens) -> Result<String, String> {
+fn assign(iter: &mut Tokens, member: Member) -> Result<Statement, ()> {
+    let value = value(iter)?;
+    Ok(Statement::Assign { member, value })
+}
+
+fn wire(iter: &mut Tokens, downstream: Member) -> Result<Statement, ()> {
+    let upstream = ident(iter)?;
+    Ok(Statement::Wire {
+        upstream,
+        downstream,
+    })
+}
+
+fn literal(iter: &mut Tokens) -> Result<Literal, ()> {
     match iter.next() {
-        Some(token) => Ok(match token {
-            Token::Identifier(name) => name.into(),
-            other => return Err(format!("Invalid value: {:?}", other)),
-        }),
-        None => Err("Invalid value".into()),
+        Some(Token::Value(value)) => Ok(Literal::Value(value.clone())),
+        Some(Token::Identifier(name)) => Ok(Literal::Identifier(name.clone())),
+        _ => Err(()),
+    }
+}
+
+fn value(iter: &mut Tokens) -> Result<Value, ()> {
+    match iter.next() {
+        Some(Token::Value(value)) => Ok(value.clone()),
+        _ => Err(()),
+    }
+}
+
+fn member(iter: &mut Tokens) -> Result<Member, ()> {
+    let node = ident(iter)?;
+    dot(iter)?;
+    let attr = ident(iter)?;
+    Ok(Member { node, attr })
+}
+
+fn dot(iter: &mut Tokens) -> Result<(), ()> {
+    match iter.next() {
+        Some(Token::Dot) => Ok(()),
+        _ => Err(()),
+    }
+}
+
+fn equal(iter: &mut Tokens) -> Result<(), ()> {
+    match iter.next() {
+        Some(Token::Equal) => Ok(()),
+        _ => Err(()),
+    }
+}
+
+fn ident(iter: &mut Tokens) -> Result<String, ()> {
+    match iter.next() {
+        Some(Token::Identifier(name)) => Ok(name.clone()),
+        _ => Err(()),
     }
 }

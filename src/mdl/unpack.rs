@@ -1,66 +1,102 @@
 use super::*;
-use crate::engine::Engine;
-use crate::graph;
+use crate::{engine::Engine, graph::Node};
 
-pub fn unpack(mdl: &Graph) -> Result<Engine, String> {
-    let mut engine = Engine::new();
-    let mut nodes = HashMap::new();
+pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
+    match statement {
+        Statement::Assign { member, value } => {
+            let node_id = match engine.node_names.get(&member.node) {
+                Some(id) => Ok(id),
+                None => Err(format!("Node name not found: {}", member.node)),
+            }?;
 
-    for def in mdl.nodes.iter() {
-        let plugin_id = engine
-            .plugins
-            .r#where(|plug| plug.desc().name() == def.kind)
-            .ok_or(format!("Could not resolve plugin: {}", def.kind))?;
+            let plugin_id = match engine.nodes.get_ref(*node_id) {
+                Some(node) => node.plugin,
+                None => unreachable!(),
+            };
 
-        let id = engine.insert_node(graph::Node::new(plugin_id), "".to_string());
-        let plugin = engine.plugins.get_ref(plugin_id).unwrap();
-        if let Some(_old) = nodes.insert(&def.name, id) {
-            return Err(format!("Duplicate node name: {}", &def.name));
-        }
-        for attr in def.attributes.iter() {
-            if let Some(index) = plugin.desc().index_for_control(&attr.key) {
-                if let Some(controls) = engine.controls.get_mut(id) {
-                    // TODO: Error reporting for non-matching types
-                    controls[index] = attr.value.clone();
+            let control_index = match engine.plugins.get_ref(plugin_id) {
+                Some(plugin) => plugin
+                    .desc()
+                    .index_for_control(&member.attr)
+                    .ok_or(format!("Attribute name not found: {}", member.attr)),
+                None => unreachable!(),
+            }?;
+
+            match engine.controls.get_mut(*node_id) {
+                Some(controls) => {
+                    let control = &controls[control_index];
+                    controls[control_index] = match (control, value) {
+                        (Value::Text(_), Value::Text(_)) => value.clone(),
+                        (Value::Boolean(_), Value::Boolean(_)) => value.clone(),
+                        (Value::Integer(_), Value::Integer(_)) => value.clone(),
+                        (Value::Real(_), Value::Real(_)) => value.clone(),
+                        (Value::Real(_), Value::Integer(int)) => Value::Real(*int as f32),
+                        _ => return Err(format!("Attribute type does not match assignment: {}", member)),
+                    };
                 }
+                None => unreachable!(),
             }
+            Ok(())
         }
-    }
 
-    for def in mdl.nodes.iter() {
-        let plugin_id = engine
-            .plugins
-            .r#where(|plug| plug.desc().name() == def.kind)
-            .ok_or(format!("Could not resolve plugin: {}", def.kind))?;
-        let plugin = engine.plugins.get_ref(plugin_id).unwrap();
-
-        if let Some(downstream) = nodes.get(&def.name) {
-            for pair in def.inputs.iter() {
-                let input_name = &pair.key;
-                let upstream_name = &pair.value;
-                if let Some(input_index) = plugin.desc().index_for_input(&input_name) {
-                    if let Some(upstream) = nodes.get(&upstream_name) {
-                        engine
-                            .graph
-                            .connect(*downstream, *upstream, input_index, &mut engine.dfs);
-                    }
-                }
-            }
+        Statement::New { kind, name } => {
+            let plugin_id = match engine.plugin_names.get(kind) {
+                Some(id) => Ok(id),
+                None => Err(format!("Node kind not found: {}", kind)),
+            }?;
+            let node = Node::new(*plugin_id);
+            engine.insert_node(node, name.into());
+            Ok(())
         }
-    }
 
-    for option in mdl.options.iter() {
-        match option.key.as_str() {
-            "viewing" => match &option.value {
-                Literal::Identifier(name) => match nodes.get(name) {
-                    Some(id) => engine.viewing = *id,
-                    _ => return Err("Could not resolve node name".into()),
+        Statement::Delete { name } => {
+            let id = match engine.node_names.get(name) {
+                Some(id) => Ok(*id),
+                None => Err(format!("Node name not found: {}", name)), 
+            }?;
+            engine.delete_node(id);
+            Ok(())
+        }
+
+        Statement::Glob { attr, value } => match attr.as_str() {
+            "viewing" => match value {
+                Literal::Identifier(name) => match engine.node_names.get(name) {
+                    Some(id) => Ok(engine.viewing = *id),
+                    None => Err(format!("Node name not found: {}", name)),
                 },
-                _ => return Err("Viewing global should be an identifier".into()),
+                _ => Err("Viewing attribute takes a node identifier".to_string()),
             },
-            _ => return Err("Unrecognized global option".into()),
+            _ => Err(format!("Unrecognized global attribute: {}", attr)),
+        },
+
+        Statement::Wire {
+            downstream,
+            upstream,
+        } => {
+            let downstream_id = match engine.node_names.get(&downstream.node) {
+                Some(id) => Ok(id),
+                None => Err(format!("Downstream node name not found: {}", downstream.node)),
+            }?;
+            let upstream_id = match engine.node_names.get(upstream) {
+                Some(id) => Ok(id),
+                None => Err(format!("Upstream node name not found: {}", upstream)), 
+            }?;
+            let downstream_node = match engine.nodes.get(*downstream_id) {
+                Some(node) => node,
+                None => unreachable!(),
+            };
+            let downstream_plugin = match engine.plugins.get_ref(downstream_node.plugin) {
+                Some(plugin) => plugin,
+                None => unreachable!(),
+            };
+            let input = match downstream_plugin.desc().index_for_input(&downstream.attr) {
+                Some(index) => Ok(index),
+                None => Err(format!("Input name not found: {}", downstream.attr)),
+            }?;
+            engine
+                .graph
+                .connect(*downstream_id, *upstream_id, input, &mut engine.dfs);
+            Ok(())
         }
     }
-
-    Ok(engine)
 }
