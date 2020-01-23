@@ -1,38 +1,52 @@
-glob viewing: delinearize
+# I'm a comment!
 
-load kitty () {
-    filename: "data/kitty.png",
-}
+new load kitty
+kitty.filename = "data/kitty.png"
 
-load tree () {
-    filename: "data/tree.png",
-}
+new load tree
+tree.filename = "data/tree.png"
 
-gamma linearize_tree (bg: tree) { }
-gamma linearize_kitty (bg: kitty) { }
+new gamma linear_tree
+linear_tree.bg <- tree
 
-merge combine (bg: linearize_tree, fg: linearize_kitty) { 
-    tx: 200,
-    ty: 200,
-}
+new gamma linear_kitty
+linear_kitty.bg <- kitty
 
-shuffle weird (bg: combine) {
-    r: 1,
-    g: 2,
-    b: 0,
-    a: 3,
-}
+new merge combine
+combine.bg <- linear_tree
+combine.fg <- linear_kitty
+combine.tx = 200
+combine.ty = 200
 
-blur gaussian (bg: weird) {
-    size: 24,
-}
+new shuffle weird
+weird.bg <- combine
+weird.r = 1
+weird.g = 2
+weird.b = 0
+weird.a = 3
 
-correct cc (bg: gaussian) { 
-    hue_rotation: 3.14,
-    saturation: 0.5,
-    exposure: 1.5,
-}
+new blur gaussian
+gaussian.bg <- weird
+gaussian.size = 24
 
-gamma delinearize (bg: cc) {
-    invert: true,
-}
+new correct cc 
+cc.bg <- gaussian
+cc.hue_rotation = 3.14
+cc.saturation = 0.5
+cc.exposure = 1.5
+
+new gamma delinear
+delinear.bg <- cc
+delinear.invert = true
+
+glob viewing = delinear
+
+
+######################
+# Additions for later:
+
+# Enumerations: 
+# gaussian.kernel = BOX
+
+# Expressions:
+# combine.tx = pow(combine.ty + 20, 0.5) % 100
