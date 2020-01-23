@@ -1,6 +1,8 @@
 use super::{builtin, Plugin};
-use crate::utils::Id;
-use crate::utils::Table;
+use crate::{
+    utils::Id,
+    utils::Table,
+};
 use std::collections::HashMap;
 
 type Create = fn() -> Plugin;

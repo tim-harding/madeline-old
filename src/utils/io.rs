@@ -1,6 +1,8 @@
 use crate::image::Image;
-use std::fs::File;
-use std::path::Path;
+use std::{
+    fs::File,
+    path::Path,
+};
 
 mod png;
 

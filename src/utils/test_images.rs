@@ -1,5 +1,7 @@
-use crate::image::{self, Image};
-use crate::utils::Vec2U;
+use crate::{
+    image::{self, Image},
+    utils::Vec2U,
+};
 
 pub fn checker(size: Vec2U) -> Image {
     let desc = image::Desc::new(size, 4);

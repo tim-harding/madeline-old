@@ -1,7 +1,9 @@
-use crate::control;
-use crate::image::Image;
-use crate::plugin::{self, *};
-use crate::utils::{Value, Vec2I, Vec2U};
+use crate::{
+    control,
+    image::Image,
+    plugin::{self, *},
+    utils::{Value, Vec2I, Vec2U},
+};
 use std::iter::repeat;
 
 enum Parameters {

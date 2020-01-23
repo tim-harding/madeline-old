@@ -1,7 +1,9 @@
 use crate::utils::{Vec2I, Vec2U};
-use std::mem;
-use std::ops::{Index, IndexMut};
-use std::slice::{Iter, IterMut};
+use std::{
+    mem,
+    ops::{Index, IndexMut},
+    slice::{Iter, IterMut},
+};
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {

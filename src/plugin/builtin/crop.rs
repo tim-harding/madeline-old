@@ -1,7 +1,9 @@
-use crate::control;
-use crate::image::{self, Image};
-use crate::plugin::{self, *};
-use crate::utils::{Value, Vec2U};
+use crate::{
+    control,
+    image::{self, Image},
+    plugin::{self, *},
+    utils::{Value, Vec2U},
+};
 use std::cmp::max;
 
 // TODO: options for edge-extension

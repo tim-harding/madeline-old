@@ -1,6 +1,7 @@
-use std::cmp::{max, min};
-use std::cmp::{Eq, Ord};
-use std::ops::*;
+use std::{
+    cmp::{max, min, Eq, Ord},
+    ops::*,
+};
 
 pub type Vec2F = Vec2Base<f32>;
 pub type Vec2U = Vec2Base<usize>;

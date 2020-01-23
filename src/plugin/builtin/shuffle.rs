@@ -1,7 +1,9 @@
-use crate::control;
-use crate::image::{Channel, Image};
-use crate::plugin::{self, *};
-use crate::utils::Value;
+use crate::{
+    control,
+    image::{Channel, Image},
+    plugin::{self, *},
+    utils::Value,
+};
 
 enum Parameters {
     R,

@@ -1,8 +1,12 @@
-use crate::image::{self, Image};
-use crate::utils::{Vec2I, Vec2U};
+use crate::{
+    image::{self, Image},
+    utils::{Vec2I, Vec2U},
+};
 use ::png::{BitDepth, ColorType, Decoder, OutputInfo};
-use std::fs::File;
-use std::io::{self, BufWriter};
+use std::{
+    fs::File,
+    io::{self, BufWriter},
+};
 
 pub fn load(file: &File) -> Result<Image, String> {
     let (img_data, info) = extract(file).map_err(|e| format!("{}", e))?;

@@ -1,7 +1,9 @@
-use crate::control;
-use crate::image::Image;
-use crate::plugin::*;
-use crate::utils::{io, Value};
+use crate::{
+    control,
+    image::Image,
+    plugin::*,
+    utils::{io, Value},
+};
 use std::path::PathBuf;
 
 enum Parameters {

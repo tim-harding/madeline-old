@@ -1,12 +1,14 @@
+use crate::{
+    utils::{Enumeration, Value},
+    control,
+    image::Image,
+    plugin,
+};
+
 mod plugins;
-use crate::utils::{Enumeration, Value};
 pub use plugins::*;
 
 pub mod builtin;
-
-use crate::control;
-use crate::image::Image;
-use crate::plugin;
 
 // Desc could really be replaced with just plugin
 
