@@ -1,8 +1,8 @@
 use crate::{
-    utils::{Enumeration, Value},
     control,
     image::Image,
     plugin,
+    utils::{Enumeration, Value},
 };
 
 mod plugins;

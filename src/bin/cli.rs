@@ -31,7 +31,7 @@ fn main() -> Result<(), String> {
         )
         .get_matches();
 
-    let parser = mdl::Parser::new();
+    let parser = mdl::Parser::default();
     let mut engine = Engine::new();
     match matches.value_of("comp_file") {
         Some(comp) => {
@@ -51,9 +51,15 @@ fn main() -> Result<(), String> {
             let mut line = String::new();
             while let Ok(_) = std::io::stdin().read_line(&mut line) {
                 match parser.parse(&line) {
-                    Ok(statement) => mdl::apply(&mut engine, &statement)?,
+                    Ok(statement) => {
+                        if let Err(e) = mdl::apply(&mut engine, &statement) {
+                            println!("{}", e);
+                        }
+                    }
                     Err(e) => println!("{}", e),
-                }
+                };
+                println!("");
+                line.clear();
             }
             Ok(())
         }

@@ -6,7 +6,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/cli.exe",
-            "args": ["--comp", "data/new_format.mdl"],
+            "args": ["--comp", "comps/cycle.mdl"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

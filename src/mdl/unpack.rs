@@ -31,7 +31,12 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
                         (Value::Integer(_), Value::Integer(_)) => value.clone(),
                         (Value::Real(_), Value::Real(_)) => value.clone(),
                         (Value::Real(_), Value::Integer(int)) => Value::Real(*int as f32),
-                        _ => return Err(format!("Attribute type does not match assignment: {}", member)),
+                        _ => {
+                            return Err(format!(
+                                "Attribute type does not match assignment: {}",
+                                member
+                            ))
+                        }
                     };
                 }
                 None => unreachable!(),
@@ -52,7 +57,7 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
         Statement::Delete { name } => {
             let id = match engine.node_names.get(name) {
                 Some(id) => Ok(*id),
-                None => Err(format!("Node name not found: {}", name)), 
+                None => Err(format!("Node name not found: {}", name)),
             }?;
             engine.delete_node(id);
             Ok(())
@@ -61,7 +66,10 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
         Statement::Glob { attr, value } => match attr.as_str() {
             "viewing" => match value {
                 Literal::Identifier(name) => match engine.node_names.get(name) {
-                    Some(id) => Ok(engine.viewing = *id),
+                    Some(id) => {
+                        engine.viewing = *id;
+                        Ok(())
+                    }
                     None => Err(format!("Node name not found: {}", name)),
                 },
                 _ => Err("Viewing attribute takes a node identifier".to_string()),
@@ -75,11 +83,14 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
         } => {
             let downstream_id = match engine.node_names.get(&downstream.node) {
                 Some(id) => Ok(id),
-                None => Err(format!("Downstream node name not found: {}", downstream.node)),
+                None => Err(format!(
+                    "Downstream node name not found: {}",
+                    downstream.node
+                )),
             }?;
             let upstream_id = match engine.node_names.get(upstream) {
                 Some(id) => Ok(id),
-                None => Err(format!("Upstream node name not found: {}", upstream)), 
+                None => Err(format!("Upstream node name not found: {}", upstream)),
             }?;
             let downstream_node = match engine.nodes.get(*downstream_id) {
                 Some(node) => node,

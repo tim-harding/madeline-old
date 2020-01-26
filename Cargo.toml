@@ -3,10 +3,15 @@ name = "madeline"
 version = "0.1.0"
 authors = ["Tim Harding <tim@timharding.co>"]
 edition = "2018"
+default-run = "viewer"
 
 [lib]
 name = "madeline"
 
 [dependencies]
-png = "0.15.2"
-clap = "2.33.0"
+png = "^0"
+clap = "^2"
+wgpu = "^0"
+winit = "^0"
+log = "^0"
+fern = { version = "^0", features = ["colored"] }

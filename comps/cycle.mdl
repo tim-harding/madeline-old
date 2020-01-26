@@ -1,0 +1,9 @@
+new correct first
+new correct second
+new correct third
+
+first.bg <- second
+second.bg <- third
+third.bg <- first
+
+glob viewing = first

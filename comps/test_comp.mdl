@@ -27,11 +27,11 @@ weird.a = 3
 
 new blur gaussian
 gaussian.bg <- weird
-gaussian.size = 24
+gaussian.size = 12
 
 new correct cc 
 cc.bg <- gaussian
-cc.hue_rotation = 3.14
+# cc.hue_rotation = 3.14
 cc.saturation = 0.5
 cc.exposure = 1.5
 

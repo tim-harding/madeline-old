@@ -1,8 +1,5 @@
 use super::{builtin, Plugin};
-use crate::{
-    utils::Id,
-    utils::Table,
-};
+use crate::{utils::Id, utils::Table};
 use std::collections::HashMap;
 
 type Create = fn() -> Plugin;
@@ -12,6 +9,7 @@ struct Context<'a> {
     names: &'a mut HashMap<String, Id>,
 }
 
+#[allow(clippy::implicit_hasher)]
 pub fn populate_builtin(plugins: &mut Table<Plugin>, names: &mut HashMap<String, Id>) {
     let creates = [
         builtin::load::create,

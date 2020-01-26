@@ -55,7 +55,7 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
                 let base_x = pos as usize;
 
                 let idxn = max(0, pos as isize - 1) as usize;
-                let idx0 = min(src.desc().size.x - 1, base_x + 0);
+                let idx0 = min(src.desc().size.x - 1, base_x);
                 let idx1 = min(src.desc().size.x - 1, base_x + 1);
                 let idx2 = min(src.desc().size.x - 1, base_x + 2);
 

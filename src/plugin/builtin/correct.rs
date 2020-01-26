@@ -1,8 +1,4 @@
-use crate::{
-    image::Image,
-    plugin::*,
-    utils::Value,
-};
+use crate::{image::Image, plugin::*, utils::Value};
 
 enum Parameters {
     HueRotation,

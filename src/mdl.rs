@@ -1,5 +1,5 @@
 use crate::utils::Value;
-use std::{collections::HashMap, iter::Peekable, slice::Iter, str::Chars, fmt};
+use std::{collections::HashMap, fmt, iter::Peekable, slice::Iter, str::Chars};
 
 mod unpack;
 pub use unpack::apply;
@@ -68,8 +68,8 @@ pub struct Parser {
     tokens: Vec<Token>,
 }
 
-impl Parser {
-    pub fn new() -> Self {
+impl Default for Parser {
+    fn default() -> Self {
         let mut keywords = HashMap::new();
         keywords.insert("glob".into(), Token::Glob);
         keywords.insert("new".into(), Token::New);
@@ -81,7 +81,9 @@ impl Parser {
             tokens: Vec::new(),
         }
     }
+}
 
+impl Parser {
     pub fn parse(&self, src: &str) -> Result<Statement, String> {
         let tokens = tokenize(src, &self.keywords)?;
         parse(&tokens)
