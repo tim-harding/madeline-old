@@ -1,9 +1,9 @@
 #[rustfmt::skip]
 const VERTEX_DATA: &[f32] = &[
     0.0, 0.0, 
-    1.0, 0.0, 
+    0.0, 1.0, 
     1.0, 1.0, 
-    0.0, 1.0
+    1.0, 0.0
 ];
 
 #[rustfmt::skip]
