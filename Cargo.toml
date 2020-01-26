@@ -10,6 +10,7 @@ name = "madeline"
 
 [dependencies]
 png = "^0"
+image = "^0"
 clap = "^2"
 wgpu = "^0"
 winit = "^0"
