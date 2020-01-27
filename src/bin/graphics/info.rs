@@ -1,9 +1,11 @@
 use super::quad;
 use super::utils;
+use super::GraphGeo;
 
 pub struct Info {
-    pub vertex_buf: wgpu::Buffer,
-    pub index_buf: wgpu::Buffer,
+    pub vbo: wgpu::Buffer,
+    pub ibo: wgpu::Buffer,
+    pub indices: u32,
     pub bind_group: wgpu::BindGroup,
     pub pipeline: wgpu::RenderPipeline,
     pub locals_uniform: wgpu::Buffer,
@@ -18,9 +20,18 @@ impl Info {
         let vs_module = shader_module("shaders/vert.spv")?;
         let fs_module = shader_module("shaders/frag.spv")?;
 
-        let vertex_buf =
-            utils::buffer_with_data(&device, quad::VERTICES, wgpu::BufferUsage::VERTEX);
-        let index_buf = utils::buffer_with_data(&device, quad::INDICES, wgpu::BufferUsage::INDEX);
+        let GraphGeo { geometry } = GraphGeo::new()?;
+
+        println!("Vertex count: {}", geometry.vertices.len());
+        println!("Index count:  {}", geometry.indices.len());
+        
+        let vbo = device
+            .create_buffer_mapped(geometry.vertices.len(), wgpu::BufferUsage::VERTEX)
+            .fill_from_slice(&geometry.vertices);
+
+        let ibo = device
+            .create_buffer_mapped(geometry.indices.len(), wgpu::BufferUsage::INDEX)
+            .fill_from_slice(&geometry.indices);
 
         // Create pipeline layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -195,14 +206,9 @@ impl Info {
                 step_mode: wgpu::InputStepMode::Vertex,
                 attributes: &[
                     wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float4,
+                        format: wgpu::VertexFormat::Float2,
                         offset: 0,
                         shader_location: 0,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float2,
-                        offset: 4 * 4,
-                        shader_location: 1,
                     },
                 ],
             }],
@@ -213,8 +219,9 @@ impl Info {
 
         Ok((
             Self {
-                vertex_buf,
-                index_buf,
+                vbo,
+                ibo,
+                indices: geometry.indices.len() as u32,
                 bind_group,
                 pipeline,
                 locals_uniform,

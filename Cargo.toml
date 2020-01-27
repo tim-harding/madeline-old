@@ -17,3 +17,4 @@ wgpu = "^0"
 winit = "^0"
 log = "^0"
 fern = { version = "^0", features = ["colored"] }
+lyon = "^0"

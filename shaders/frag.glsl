@@ -20,6 +20,9 @@ layout (set = 0, binding = 2) uniform Locals {
 } locals;
 
 void main() {
+    /*
     vec4 tx = texture(sampler2D(t_Color, s_Color), v_TexCoord);
     color = tx * vec4(vec3(locals.brightness), 1.0);
+    */
+    color = vec4(1.0);
 }

@@ -119,9 +119,9 @@ fn main() -> Result<(), &'static str> {
                     });
                     rpass.set_pipeline(&info.pipeline);
                     rpass.set_bind_group(0, &info.bind_group, &[]);
-                    rpass.set_index_buffer(&info.index_buf, 0);
-                    rpass.set_vertex_buffers(0, &[(&info.vertex_buf, 0)]);
-                    rpass.draw_indexed(0..quad::INDICES.len() as u32, 0, 0..1);
+                    rpass.set_index_buffer(&info.ibo, 0);
+                    rpass.set_vertex_buffers(0, &[(&info.vbo, 0)]);
+                    rpass.draw_indexed(0..info.indices as u32, 0, 0..1);
                 }
 
                 let command_buf = encoder.finish();

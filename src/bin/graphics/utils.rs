@@ -9,9 +9,9 @@ pub fn buffer_with_data<T>(
             data.len() * std::mem::size_of::<T>(),
         )
     };
-    let mapped = device.create_buffer_mapped(data.len(), usage);
-    mapped.data.copy_from_slice(data);
-    mapped.finish()
+    device
+        .create_buffer_mapped(data.len(), usage)
+        .fill_from_slice(data)
 }
 
 #[repr(C)]
