@@ -1,7 +1,9 @@
 #version 450
 
-// Input and output locations can overlap
 layout (location = 0) in vec2 v_TexCoord;
+
+// Input and output locations can overlap
+layout (location = 0) out vec4 color;
 
 // Set bind group's first parameter corresponds to `set`.
 // This allows, for example, a separate bind group for 
@@ -16,8 +18,6 @@ layout (set = 0, binding = 2) uniform Locals {
 
 // Optional namespacing of members under `local`
 } locals;
-
-layout (location = 0) out vec4 color;
 
 void main() {
     vec4 tx = texture(sampler2D(t_Color, s_Color), v_TexCoord);

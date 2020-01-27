@@ -44,6 +44,8 @@ fn main() -> Result<(), &'static str> {
         limits: wgpu::Limits::default(),
     });
 
+    let mut locals = utils::Locals::default();
+
     let (mut swapchain, info) = {
         let desc = swapchain_desc(window.inner_size());
         let swapchain = device.create_swap_chain(&surface, &desc);
@@ -57,15 +59,18 @@ fn main() -> Result<(), &'static str> {
         match event {
             event::Event::MainEventsCleared => window.request_redraw(),
 
-            event::Event::WindowEvent {
-                event: WindowEvent::Resized(size),
-                ..
-            } => {
-                swapchain = device.create_swap_chain(&surface, &swapchain_desc(size));
-                window.request_redraw();
-            }
-
             event::Event::WindowEvent { event, .. } => match event {
+                WindowEvent::Resized(size) => {
+                    swapchain = device.create_swap_chain(&surface, &swapchain_desc(size));
+                    window.request_redraw();
+                }
+
+                WindowEvent::CursorMoved { position, .. } => {
+                    let width = window.inner_size().width as f32;
+                    let position = position.x as f32;
+                    locals.brightness = position / width;
+                }
+
                 WindowEvent::KeyboardInput {
                     input:
                         event::KeyboardInput {
@@ -78,15 +83,24 @@ fn main() -> Result<(), &'static str> {
                 | WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
-                _ => {
-                    // Do update
-                }
+
+                _ => {}
             },
 
             event::Event::RedrawRequested(_) => {
+                let tmp_buf =
+                    utils::buffer_with_data(&device, &[locals], wgpu::BufferUsage::COPY_SRC);
+
                 let frame = swapchain.get_next_texture();
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
+                encoder.copy_buffer_to_buffer(
+                    &tmp_buf,
+                    0,
+                    &info.locals_uniform,
+                    0,
+                    std::mem::size_of::<utils::Locals>() as u64,
+                );
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {

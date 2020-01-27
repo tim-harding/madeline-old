@@ -1,15 +1,12 @@
 use super::quad;
+use super::utils;
 
 pub struct Info {
     pub vertex_buf: wgpu::Buffer,
     pub index_buf: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
     pub pipeline: wgpu::RenderPipeline,
-}
-
-#[repr(C)]
-struct ImageUniform {
-    pub brightness: f32,
+    pub locals_uniform: wgpu::Buffer,
 }
 
 impl Info {
@@ -21,8 +18,9 @@ impl Info {
         let vs_module = shader_module("shaders/vert.spv")?;
         let fs_module = shader_module("shaders/frag.spv")?;
 
-        let vertex_buf = buffer_with_data(&device, quad::VERTICES, wgpu::BufferUsage::VERTEX);
-        let index_buf = buffer_with_data(&device, quad::INDICES, wgpu::BufferUsage::INDEX);
+        let vertex_buf =
+            utils::buffer_with_data(&device, quad::VERTICES, wgpu::BufferUsage::VERTEX);
+        let index_buf = utils::buffer_with_data(&device, quad::INDICES, wgpu::BufferUsage::INDEX);
 
         // Create pipeline layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -92,7 +90,7 @@ impl Info {
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
         let texture_view = texture.create_default_view();
-        let temp_buf = buffer_with_data(&device, &pixels, wgpu::BufferUsage::COPY_SRC);
+        let temp_buf = utils::buffer_with_data(&device, &pixels, wgpu::BufferUsage::COPY_SRC);
 
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
@@ -130,9 +128,9 @@ impl Info {
             compare_function: wgpu::CompareFunction::Always,
         });
 
-        let brightness_uniform = buffer_with_data(
+        let locals_uniform = utils::buffer_with_data(
             &device,
-            &[ImageUniform { brightness: 0.5 }],
+            &[utils::Locals { brightness: 0.5 }],
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
@@ -151,8 +149,8 @@ impl Info {
                 wgpu::Binding {
                     binding: 2,
                     resource: wgpu::BindingResource::Buffer {
-                        buffer: &brightness_uniform,
-                        range: 0..std::mem::size_of::<ImageUniform>() as u64,
+                        buffer: &locals_uniform,
+                        range: 0..std::mem::size_of::<utils::Locals>() as u64,
                     },
                 },
             ],
@@ -219,6 +217,7 @@ impl Info {
                 index_buf,
                 bind_group,
                 pipeline,
+                locals_uniform,
             },
             encoder.finish(),
         ))
@@ -230,20 +229,4 @@ fn shader_module(device: &wgpu::Device, path: &str) -> Result<wgpu::ShaderModule
         &wgpu::read_spirv(std::fs::File::open(path).map_err(|_| "Could not read shader")?)
             .map_err(|_| "Could not read SPIR-V")?,
     ))
-}
-
-fn buffer_with_data<T>(
-    device: &wgpu::Device,
-    data: &[T],
-    usage: wgpu::BufferUsage,
-) -> wgpu::Buffer {
-    let data = unsafe {
-        std::slice::from_raw_parts(
-            data.as_ptr() as *const u8,
-            data.len() * std::mem::size_of::<T>(),
-        )
-    };
-    let mapped = device.create_buffer_mapped(data.len(), usage);
-    mapped.data.copy_from_slice(data);
-    mapped.finish()
 }
