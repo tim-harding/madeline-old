@@ -1,4 +1,3 @@
-use super::quad;
 use super::utils;
 use super::GraphGeo;
 
@@ -24,7 +23,7 @@ impl Info {
 
         println!("Vertex count: {}", geometry.vertices.len());
         println!("Index count:  {}", geometry.indices.len());
-        
+
         let vbo = device
             .create_buffer_mapped(geometry.vertices.len(), wgpu::BufferUsage::VERTEX)
             .fill_from_slice(&geometry.vertices);
@@ -179,7 +178,7 @@ impl Info {
             }),
             rasterization_state: Some(wgpu::RasterizationStateDescriptor {
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::Back,
+                cull_mode: wgpu::CullMode::None,
                 depth_bias: 0,
                 depth_bias_slope_scale: 0.0,
                 depth_bias_clamp: 0.0,
@@ -204,13 +203,11 @@ impl Info {
             vertex_buffers: &[wgpu::VertexBufferDescriptor {
                 stride: (std::mem::size_of::<f32>() * 2) as wgpu::BufferAddress,
                 step_mode: wgpu::InputStepMode::Vertex,
-                attributes: &[
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float2,
-                        offset: 0,
-                        shader_location: 0,
-                    },
-                ],
+                attributes: &[wgpu::VertexAttributeDescriptor {
+                    format: wgpu::VertexFormat::Float2,
+                    offset: 0,
+                    shader_location: 0,
+                }],
             }],
             sample_count: 1,
             sample_mask: !0,
