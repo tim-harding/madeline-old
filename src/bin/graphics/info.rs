@@ -7,10 +7,14 @@ pub struct Info {
     pub pipeline: wgpu::RenderPipeline,
 }
 
+#[repr(C)]
+struct ImageUniform {
+    pub brightness: f32,
+}
+
 impl Info {
     pub fn new(
         device: &wgpu::Device,
-        window: &winit::window::Window,
         swapchain_format: wgpu::TextureFormat,
     ) -> Result<(Self, wgpu::CommandBuffer), &'static str> {
         let shader_module = |path| shader_module(&device, path);
@@ -35,6 +39,16 @@ impl Info {
                     binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::Sampler,
+                },
+                wgpu::BindGroupLayoutBinding {
+                    binding: 2,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        // Dynamic uniform buffers are used for
+                        // instancing, so each instance could,
+                        // for example, get a different transform matrix
+                        dynamic: false,
+                    },
                 },
             ],
         });
@@ -116,6 +130,12 @@ impl Info {
             compare_function: wgpu::CompareFunction::Always,
         });
 
+        let brightness_uniform = buffer_with_data(
+            &device,
+            &[ImageUniform { brightness: 0.5 }],
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
@@ -127,6 +147,13 @@ impl Info {
                 wgpu::Binding {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &brightness_uniform,
+                        range: 0..std::mem::size_of::<ImageUniform>() as u64,
+                    },
                 },
             ],
         });
@@ -151,8 +178,16 @@ impl Info {
             primitive_topology: wgpu::PrimitiveTopology::TriangleList,
             color_states: &[wgpu::ColorStateDescriptor {
                 format: swapchain_format,
-                color_blend: wgpu::BlendDescriptor::REPLACE,
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
             depth_stencil_state: None,

@@ -47,7 +47,7 @@ fn main() -> Result<(), &'static str> {
     let (mut swapchain, info) = {
         let desc = swapchain_desc(window.inner_size());
         let swapchain = device.create_swap_chain(&surface, &desc);
-        let (info, init) = Info::new(&device, &window, desc.format)?;
+        let (info, init) = Info::new(&device, desc.format)?;
         queue.submit(&[init]);
         (swapchain, info)
     };
@@ -95,10 +95,10 @@ fn main() -> Result<(), &'static str> {
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {
-                                r: 0.1,
-                                g: 0.2,
-                                b: 0.3,
-                                a: 1.0,
+                                r: 0.2,
+                                g: 0.4,
+                                b: 0.6,
+                                a: 0.0,
                             },
                         }],
                         depth_stencil_attachment: None,
