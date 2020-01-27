@@ -154,6 +154,8 @@ fn main() -> Result<(), &'static str> {
         texture_extent,
     );
 
+    queue.submit(&[encoder.finish()]);
+
     // Create other resources
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
