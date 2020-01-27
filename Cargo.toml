@@ -6,7 +6,8 @@ edition = "2018"
 default-run = "viewer"
 
 [lib]
-name = "madeline"
+name = "engine"
+path = "src/engine/lib.rs"
 
 [dependencies]
 png = "^0"
