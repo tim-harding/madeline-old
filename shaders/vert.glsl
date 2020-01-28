@@ -8,11 +8,9 @@ layout (set = 0, binding = 0) uniform Globals {
     vec2 screen_size;
 } globals;
 
-/*
 layout (set = 1, binding = 0) uniform Pass {
     vec2 offset;
 } pass;
-*/
 
 void main() {
     v_TexCoord = position;

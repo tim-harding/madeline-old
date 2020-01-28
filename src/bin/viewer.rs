@@ -124,8 +124,8 @@ fn main() -> Result<(), &'static str> {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&info.pipeline);
-                    rpass.set_bind_group(0, &info.bind_group, &[]);
-                    // rpass.set_bind_group(1, &info.bind_group, &[]); // Need two bind groups
+                    rpass.set_bind_group(0, &info.globals_bind_group, &[]);
+                    rpass.set_bind_group(1, &info.pass_bind_group, &[]);
                     rpass.set_index_buffer(&info.geo.rect.ibo, 0);
                     rpass.set_vertex_buffers(0, &[(&info.geo.rect.vbo, 0)]);
                     rpass.draw_indexed(0..info.geo.rect.indices as u32, 0, 0..1);

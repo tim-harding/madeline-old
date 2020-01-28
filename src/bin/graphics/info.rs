@@ -4,7 +4,8 @@ use std::mem::size_of;
 
 pub struct Info {
     pub geo: GraphGeo,
-    pub bind_group: wgpu::BindGroup,
+    pub globals_bind_group: wgpu::BindGroup,
+    pub pass_bind_group: wgpu::BindGroup,
     pub pipeline: wgpu::RenderPipeline,
     pub uniforms: Uniforms,
     pub msaa_frame: wgpu::TextureView,
@@ -42,7 +43,7 @@ impl Info {
 
         let uniforms = Uniforms::new(&device);
 
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let globals_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[
                 wgpu::BindGroupLayoutBinding {
                     binding: 0,
@@ -54,24 +55,27 @@ impl Info {
                         dynamic: false,
                     },
                 },
-                /*
+            ],
+        });
+
+        let pass_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            bindings: &[
                 wgpu::BindGroupLayoutBinding {
-                    binding: 1,
+                    binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                 },
                 wgpu::BindGroupLayoutBinding {
-                    binding: 2,
+                    binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                 },
-                */
             ],
         });
 
         Ok(Self {
-            bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &bind_group_layout,
+            globals_bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &globals_bind_group_layout,
                 bindings: &[
                     wgpu::Binding {
                         binding: 0,
@@ -80,28 +84,32 @@ impl Info {
                             range: 0..size_of::<Globals>() as u64,
                         },
                     },
-                    /*
+                ],
+            }),
+
+            pass_bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &pass_bind_group_layout,
+                bindings: &[
                     wgpu::Binding {
-                        binding: 1,
+                        binding: 0,
                         resource: wgpu::BindingResource::Buffer {
                             buffer: &uniforms.pass_vert,
                             range: 0..size_of::<PassVert>() as u64,
                         },
                     },
                     wgpu::Binding {
-                        binding: 2,
+                        binding: 1,
                         resource: wgpu::BindingResource::Buffer {
                             buffer: &uniforms.pass_frag,
                             range: 0..size_of::<PassFrag>() as u64,
                         },
                     },
-                    */
                 ],
             }),
 
             pipeline: device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 layout: &device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&bind_group_layout],
+                    bind_group_layouts: &[&globals_bind_group_layout, &pass_bind_group_layout],
                 }),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
                     module: &shader_module(&device, "shaders/vert.spv")?,
