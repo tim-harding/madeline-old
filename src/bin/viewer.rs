@@ -1,6 +1,6 @@
 mod graphics;
 use graphics::{
-    utils::{Locals, Vec2},
+    utils::{self, Locals, Vec2},
     Info,
 };
 
@@ -54,10 +54,10 @@ fn main() -> Result<(), &'static str> {
         }
     };
 
-    let (mut swapchain, info) = {
+    let (mut swapchain, mut info) = {
         let desc = swapchain_desc(window.inner_size());
         let swapchain = device.create_swap_chain(&surface, &desc);
-        let (info, init) = Info::new(&device, desc.format)?;
+        let (info, init) = Info::new(&device, desc)?;
         queue.submit(&[init]);
         (swapchain, info)
     };
@@ -70,7 +70,9 @@ fn main() -> Result<(), &'static str> {
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
                     locals.screen_size = Vec2::new(size.width as f32, size.height as f32);
-                    swapchain = device.create_swap_chain(&surface, &swapchain_desc(size));
+                    let sc_desc = swapchain_desc(size);
+                    info.msaa_frame = utils::create_msaa_buffer(&device, &sc_desc);
+                    swapchain = device.create_swap_chain(&surface, &sc_desc);
                     window.request_redraw();
                 }
 
@@ -110,8 +112,8 @@ fn main() -> Result<(), &'static str> {
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                            attachment: &frame.view,
-                            resolve_target: None,
+                            attachment: &info.msaa_frame,
+                            resolve_target: Some(&frame.view),
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {

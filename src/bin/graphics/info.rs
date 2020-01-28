@@ -1,4 +1,4 @@
-use super::utils::Locals;
+use super::utils::{self, Locals};
 use super::GraphGeo;
 use std::mem::size_of;
 
@@ -9,12 +9,13 @@ pub struct Info {
     pub bind_group: wgpu::BindGroup,
     pub pipeline: wgpu::RenderPipeline,
     pub locals_uniform: wgpu::Buffer,
+    pub msaa_frame: wgpu::TextureView,
 }
 
 impl Info {
     pub fn new(
         device: &wgpu::Device,
-        swapchain_format: wgpu::TextureFormat,
+        sc_desc: wgpu::SwapChainDescriptor,
     ) -> Result<(Self, wgpu::CommandBuffer), &'static str> {
         let (vbo, ibo, indices) = {
             let GraphGeo { geometry } = GraphGeo::new()?;
@@ -187,7 +188,7 @@ impl Info {
                     }),
                     primitive_topology: wgpu::PrimitiveTopology::TriangleList,
                     color_states: &[wgpu::ColorStateDescriptor {
-                        format: swapchain_format,
+                        format: sc_desc.format,
                         color_blend: wgpu::BlendDescriptor {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
@@ -211,10 +212,12 @@ impl Info {
                             shader_location: 0,
                         }],
                     }],
-                    sample_count: 1,
+                    sample_count: utils::SAMPLES,
                     sample_mask: !0,
                     alpha_to_coverage_enabled: false,
                 }),
+
+                msaa_frame: utils::create_msaa_buffer(&device, &sc_desc),
 
                 vbo,
                 ibo,
