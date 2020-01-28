@@ -11,6 +11,7 @@ layout (location = 0) out vec4 color;
 layout (set = 0, binding = 0) uniform texture2D t_Color;
 layout (set = 0, binding = 1) uniform sampler s_Color;
 
+/*
 // Vulkan requires that uniform blocks be used
 // to define uniforms. Location layout is invalid.
 layout (set = 0, binding = 2) uniform Locals {
@@ -18,6 +19,7 @@ layout (set = 0, binding = 2) uniform Locals {
 
 // Optional namespacing of members under `local`
 } locals;
+*/
 
 void main() {
     /*

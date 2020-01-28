@@ -1,5 +1,8 @@
 mod graphics;
-use graphics::*;
+use graphics::{
+    utils::{Locals, Vec2},
+    Info,
+};
 
 fn main() -> Result<(), &'static str> {
     use winit::{
@@ -44,7 +47,12 @@ fn main() -> Result<(), &'static str> {
         limits: wgpu::Limits::default(),
     });
 
-    let mut locals = utils::Locals::default();
+    let mut locals = {
+        let size = window.inner_size();
+        Locals {
+            screen_size: Vec2::new(size.width as f32, size.height as f32),
+        }
+    };
 
     let (mut swapchain, info) = {
         let desc = swapchain_desc(window.inner_size());
@@ -61,14 +69,9 @@ fn main() -> Result<(), &'static str> {
 
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
+                    locals.screen_size = Vec2::new(size.width as f32, size.height as f32);
                     swapchain = device.create_swap_chain(&surface, &swapchain_desc(size));
                     window.request_redraw();
-                }
-
-                WindowEvent::CursorMoved { position, .. } => {
-                    let width = window.inner_size().width as f32;
-                    let position = position.x as f32;
-                    locals.brightness = position / width;
                 }
 
                 WindowEvent::KeyboardInput {
@@ -88,19 +91,22 @@ fn main() -> Result<(), &'static str> {
             },
 
             event::Event::RedrawRequested(_) => {
-                let tmp_buf =
-                    utils::buffer_with_data(&device, &[locals], wgpu::BufferUsage::COPY_SRC);
+                let tmp_buf = device
+                    .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+                    .fill_from_slice(&[locals]);
 
                 let frame = swapchain.get_next_texture();
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
+
                 encoder.copy_buffer_to_buffer(
                     &tmp_buf,
                     0,
                     &info.locals_uniform,
                     0,
-                    std::mem::size_of::<utils::Locals>() as u64,
+                    std::mem::size_of::<Locals>() as u64,
                 );
+
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {

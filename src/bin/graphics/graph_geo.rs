@@ -19,31 +19,31 @@ pub struct GraphGeo {
 impl GraphGeo {
     pub fn new() -> Result<Self, &'static str> {
         let mut builder = SvgPathBuilder::new(Path::builder());
-        builder.move_to(Point::new(0.0, 0.1));
+        builder.move_to(Point::new(0.0, 10.0));
         builder.arc(
-            Point::new(0.1, 0.1),
-            Vector::new(0.1, 0.1),
+            Point::new(10.0, 10.0),
+            Vector::new(10.0, 10.0),
             Angle::frac_pi_2(),
             Angle::frac_pi_2(),
         );
-        builder.line_to(Point::new(0.4, 0.0));
+        builder.line_to(Point::new(40.0, 0.0));
         builder.arc(
-            Point::new(0.4, 0.1),
-            Vector::new(0.1, 0.1),
+            Point::new(40.0, 10.0),
+            Vector::new(10.0, 10.0),
             Angle::frac_pi_2(),
             Angle::frac_pi_2(),
         );
-        builder.line_to(Point::new(0.5, 0.4));
+        builder.line_to(Point::new(50.0, 40.0));
         builder.arc(
-            Point::new(0.4, 0.4),
-            Vector::new(0.1, 0.1),
+            Point::new(40.0, 40.0),
+            Vector::new(10.0, 10.0),
             Angle::frac_pi_2(),
             Angle::frac_pi_2(),
         );
-        builder.line_to(Point::new(0.1, 0.5));
+        builder.line_to(Point::new(10.0, 50.0));
         builder.arc(
-            Point::new(0.1, 0.4),
-            Vector::new(0.1, 0.1),
+            Point::new(10.0, 40.0),
+            Vector::new(10.0, 10.0),
             Angle::frac_pi_2(),
             Angle::frac_pi_2(),
         );
