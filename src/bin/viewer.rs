@@ -1,6 +1,6 @@
 mod graphics;
 use graphics::{
-    utils::{self, Locals, Vec2},
+    utils::{self, Vec2, Globals},
     Info,
 };
 
@@ -47,9 +47,9 @@ fn main() -> Result<(), &'static str> {
         limits: wgpu::Limits::default(),
     });
 
-    let mut locals = {
+    let mut globals = {
         let size = window.inner_size();
-        Locals {
+        Globals {
             screen_size: Vec2::new(size.width as f32, size.height as f32),
         }
     };
@@ -57,8 +57,7 @@ fn main() -> Result<(), &'static str> {
     let (mut swapchain, mut info) = {
         let desc = swapchain_desc(window.inner_size());
         let swapchain = device.create_swap_chain(&surface, &desc);
-        let (info, init) = Info::new(&device, desc)?;
-        queue.submit(&[init]);
+        let info = Info::new(&device, desc)?;
         (swapchain, info)
     };
 
@@ -69,7 +68,7 @@ fn main() -> Result<(), &'static str> {
 
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    locals.screen_size = Vec2::new(size.width as f32, size.height as f32);
+                    globals.screen_size = Vec2::new(size.width as f32, size.height as f32);
                     let sc_desc = swapchain_desc(size);
                     info.msaa_frame = utils::create_msaa_buffer(&device, &sc_desc);
                     swapchain = device.create_swap_chain(&surface, &sc_desc);
@@ -97,16 +96,15 @@ fn main() -> Result<(), &'static str> {
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
 
-                // Only really need to do this on resize
                 let tmp_buf = device
                     .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-                    .fill_from_slice(&[locals]);
+                    .fill_from_slice(&[globals]);
                 encoder.copy_buffer_to_buffer(
                     &tmp_buf,
                     0,
-                    &info.locals_uniform,
+                    &info.uniforms.globals,
                     0,
-                    std::mem::size_of::<Locals>() as u64,
+                    std::mem::size_of::<Globals>() as u64,
                 );
 
                 {
@@ -127,6 +125,7 @@ fn main() -> Result<(), &'static str> {
                     });
                     rpass.set_pipeline(&info.pipeline);
                     rpass.set_bind_group(0, &info.bind_group, &[]);
+                    // rpass.set_bind_group(1, &info.bind_group, &[]); // Need two bind groups
                     rpass.set_index_buffer(&info.geo.rect.ibo, 0);
                     rpass.set_vertex_buffers(0, &[(&info.geo.rect.vbo, 0)]);
                     rpass.draw_indexed(0..info.geo.rect.indices as u32, 0, 0..1);
