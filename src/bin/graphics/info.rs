@@ -108,7 +108,7 @@ impl Info {
             bindings: &[
                 wgpu::BindGroupLayoutBinding {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::SampledTexture {
                         multisampled: false,
                         dimension: wgpu::TextureViewDimension::D2,
@@ -121,7 +121,7 @@ impl Info {
                 },
                 wgpu::BindGroupLayoutBinding {
                     binding: 2,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer {
                         // Dynamic uniform buffers are used for
                         // instancing, so each instance could,

@@ -93,14 +93,14 @@ fn main() -> Result<(), &'static str> {
             },
 
             event::Event::RedrawRequested(_) => {
-                let tmp_buf = device
-                    .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-                    .fill_from_slice(&[locals]);
-
                 let frame = swapchain.get_next_texture();
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
 
+                // Only really need to do this on resize
+                let tmp_buf = device
+                    .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+                    .fill_from_slice(&[locals]);
                 encoder.copy_buffer_to_buffer(
                     &tmp_buf,
                     0,
