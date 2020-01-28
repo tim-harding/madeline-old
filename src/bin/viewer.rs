@@ -62,7 +62,6 @@ fn main() -> Result<(), &'static str> {
         (swapchain, info)
     };
 
-    queue.submit(&[update_locals_uniform(&device, locals, &info.locals_uniform)]);
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
@@ -74,9 +73,6 @@ fn main() -> Result<(), &'static str> {
                     let sc_desc = swapchain_desc(size);
                     info.msaa_frame = utils::create_msaa_buffer(&device, &sc_desc);
                     swapchain = device.create_swap_chain(&surface, &sc_desc);
-
-                    queue.submit(&[update_locals_uniform(&device, locals, &info.locals_uniform)]);
-
                     window.request_redraw();
                 }
 
@@ -100,6 +96,19 @@ fn main() -> Result<(), &'static str> {
                 let frame = swapchain.get_next_texture();
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
+
+                // Only really need to do this on resize
+                let tmp_buf = device
+                    .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+                    .fill_from_slice(&[locals]);
+                encoder.copy_buffer_to_buffer(
+                    &tmp_buf,
+                    0,
+                    &info.locals_uniform,
+                    0,
+                    std::mem::size_of::<Locals>() as u64,
+                );
+
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -139,24 +148,4 @@ fn swapchain_desc(size: winit::dpi::PhysicalSize<u32>) -> wgpu::SwapChainDescrip
         height: size.height,
         present_mode: wgpu::PresentMode::Vsync,
     }
-}
-
-fn update_locals_uniform(
-    device: &wgpu::Device,
-    locals: Locals,
-    uniform: &wgpu::Buffer,
-) -> wgpu::CommandBuffer {
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
-    let tmp_buf = device
-        .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-        .fill_from_slice(&[locals]);
-    encoder.copy_buffer_to_buffer(
-        &tmp_buf,
-        0,
-        &uniform,
-        0,
-        std::mem::size_of::<Locals>() as u64,
-    );
-
-    encoder.finish()
 }
