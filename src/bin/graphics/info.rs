@@ -1,37 +1,14 @@
-use super::utils::{self, Globals, PassVert, PassFrag};
+use super::utils::{self, Globals, PassFrag, PassVert};
 use super::GraphGeo;
 use std::mem::size_of;
 
 pub struct Info {
     pub geo: GraphGeo,
     pub globals_bind_group: wgpu::BindGroup,
-    pub pass_bind_group: wgpu::BindGroup,
+    pub pass_bind_group_layout: wgpu::BindGroupLayout,
     pub pipeline: wgpu::RenderPipeline,
-    pub uniforms: Uniforms,
+    pub globals_uniform: wgpu::Buffer,
     pub msaa_frame: wgpu::TextureView,
-}
-
-pub struct Uniforms {
-    pub globals: wgpu::Buffer,
-    pub pass_vert: wgpu::Buffer,
-    pub pass_frag: wgpu::Buffer,
-}
-
-impl Uniforms {
-    pub fn new(device: &wgpu::Device) -> Self {
-        Self {
-            globals: buffer::<Globals>(device),
-            pass_vert: buffer::<PassVert>(device),
-            pass_frag: buffer::<PassFrag>(device),
-        }
-    }
-}
-
-fn buffer<T>(device: &wgpu::Device) -> wgpu::Buffer {
-    device.create_buffer(&wgpu::BufferDescriptor {
-        size: size_of::<T>() as u64,
-        usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-    })
 }
 
 impl Info {
@@ -41,11 +18,11 @@ impl Info {
     ) -> Result<Self, &'static str> {
         let geo = GraphGeo::new(device)?;
 
-        let uniforms = Uniforms::new(&device);
+        let globals_uniform = utils::buffer::<Globals>(&device);
 
-        let globals_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
-                wgpu::BindGroupLayoutBinding {
+        let globals_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutBinding {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer {
@@ -54,62 +31,40 @@ impl Info {
                         // for example, get a different transform matrix
                         dynamic: false,
                     },
-                },
-            ],
-        });
+                }],
+            });
 
-        let pass_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
-            bindings: &[
-                wgpu::BindGroupLayoutBinding {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-                wgpu::BindGroupLayoutBinding {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-            ],
-        });
+        let pass_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutBinding {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                    },
+                    wgpu::BindGroupLayoutBinding {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                    },
+                ],
+            });
 
         Ok(Self {
             globals_bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &globals_bind_group_layout,
-                bindings: &[
-                    wgpu::Binding {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &uniforms.globals,
-                            range: 0..size_of::<Globals>() as u64,
-                        },
+                bindings: &[wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &globals_uniform,
+                        range: 0..size_of::<Globals>() as u64,
                     },
-                ],
-            }),
-
-            pass_bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &pass_bind_group_layout,
-                bindings: &[
-                    wgpu::Binding {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &uniforms.pass_vert,
-                            range: 0..size_of::<PassVert>() as u64,
-                        },
-                    },
-                    wgpu::Binding {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &uniforms.pass_frag,
-                            range: 0..size_of::<PassFrag>() as u64,
-                        },
-                    },
-                ],
+                }],
             }),
 
             pipeline: device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 layout: &device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&globals_bind_group_layout, &pass_bind_group_layout],
+                    bind_group_layouts: &[&globals_bind_group_layout/*, &pass_bind_group_layout*/],
                 }),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
                     module: &shader_module(&device, "shaders/vert.spv")?,
@@ -159,8 +114,9 @@ impl Info {
 
             msaa_frame: utils::create_msaa_buffer(&device, &sc_desc),
 
+            pass_bind_group_layout,
             geo,
-            uniforms,
+            globals_uniform,
         })
     }
 }
