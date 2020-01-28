@@ -3,9 +3,7 @@ use super::GraphGeo;
 use std::mem::size_of;
 
 pub struct Info {
-    pub vbo: wgpu::Buffer,
-    pub ibo: wgpu::Buffer,
-    pub indices: u32,
+    pub geo: GraphGeo,
     pub bind_group: wgpu::BindGroup,
     pub pipeline: wgpu::RenderPipeline,
     pub locals_uniform: wgpu::Buffer,
@@ -17,19 +15,7 @@ impl Info {
         device: &wgpu::Device,
         sc_desc: wgpu::SwapChainDescriptor,
     ) -> Result<(Self, wgpu::CommandBuffer), &'static str> {
-        let (vbo, ibo, indices) = {
-            let GraphGeo { geometry } = GraphGeo::new()?;
-
-            let vbo = device
-                .create_buffer_mapped(geometry.vertices.len(), wgpu::BufferUsage::VERTEX)
-                .fill_from_slice(&geometry.vertices);
-
-            let ibo = device
-                .create_buffer_mapped(geometry.indices.len(), wgpu::BufferUsage::INDEX)
-                .fill_from_slice(&geometry.indices);
-
-            (vbo, ibo, geometry.indices.len() as u32)
-        };
+        let geo = GraphGeo::new(device)?;
 
         let (texture_view, init_buffer) = {
             let (pixels, dims) = {
@@ -98,10 +84,7 @@ impl Info {
         };
 
         let locals_uniform = device
-            .create_buffer_mapped(
-                1,
-                wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-            )
+            .create_buffer_mapped(1, wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST)
             .fill_from_slice(&[Locals::default()]);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -219,9 +202,7 @@ impl Info {
 
                 msaa_frame: utils::create_msaa_buffer(&device, &sc_desc),
 
-                vbo,
-                ibo,
-                indices,
+                geo,
                 locals_uniform,
             },
             init_buffer,

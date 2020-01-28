@@ -17,7 +17,7 @@ pub struct Locals {
     pub screen_size: Vec2,
 }
 
-pub const SAMPLES: u32 = 4;
+pub const SAMPLES: u32 = 8;
 
 pub fn create_msaa_buffer(
     device: &wgpu::Device,
