@@ -8,9 +8,10 @@ use std::mem::size_of;
 
 #[repr(C)]
 struct Component {
-    pub uniforms: Uniforms,
     pub bind_group: wgpu::BindGroup,
     pub mesh: Mesh,
+    pub pass_vert: wgpu::Buffer,
+    pub pass_frag: wgpu::Buffer,
 }
 
 impl Component {
@@ -21,8 +22,12 @@ impl Component {
         offset: Vec2,
         color: Vec3,
     ) -> Self {
-        let pass_vert_buffer = utils::buffer::<PassVert>(device);
-        let pass_frag_buffer = utils::buffer::<PassFrag>(device);
+        let pass_vert = device
+            .create_buffer_mapped(1, wgpu::BufferUsage::UNIFORM)
+            .fill_from_slice(&[offset]);
+        let pass_frag = device
+            .create_buffer_mapped(1, wgpu::BufferUsage::UNIFORM)
+            .fill_from_slice(&[color]);
         Self {
             mesh,
             bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -31,41 +36,23 @@ impl Component {
                     wgpu::Binding {
                         binding: 0,
                         resource: wgpu::BindingResource::Buffer {
-                            buffer: &pass_vert_buffer,
+                            buffer: &pass_vert,
                             range: 0..size_of::<PassVert>() as u64,
                         },
                     },
                     wgpu::Binding {
                         binding: 1,
                         resource: wgpu::BindingResource::Buffer {
-                            buffer: &pass_frag_buffer,
+                            buffer: &pass_frag,
                             range: 0..size_of::<PassFrag>() as u64,
                         },
                     },
                 ],
             }),
-            uniforms: Uniforms {
-                pass_vert: Uniform {
-                    data: PassVert { offset },
-                    buffer: pass_vert_buffer,
-                },
-                pass_frag: Uniform {
-                    data: PassFrag { color },
-                    buffer: pass_frag_buffer,
-                },
-            },
+            pass_vert,
+            pass_frag,
         }
     }
-}
-
-struct Uniform<T> {
-    pub data: T,
-    pub buffer: wgpu::Buffer,
-}
-
-struct Uniforms {
-    pub pass_vert: Uniform<PassVert>,
-    pub pass_frag: Uniform<PassFrag>,
 }
 
 fn main() -> Result<(), &'static str> {
@@ -197,44 +184,6 @@ fn main() -> Result<(), &'static str> {
                         0,
                         std::mem::size_of::<Globals>() as u64,
                     );
-                }
-
-                {
-                    // Repopulate pass uniforms
-                    // Component contains some unnecessary bytes,
-                    // perhaps there's a more compact way of getting
-                    // this data to the buffer.
-                    let component_data = unsafe {
-                        std::slice::from_raw_parts(
-                            components.as_ptr() as *const u8,
-                            components.len() * size_of::<Component>(),
-                        )
-                    };
-
-                    let tmp_buf = device
-                        .create_buffer_mapped(
-                            components.len() * size_of::<Component>(),
-                            wgpu::BufferUsage::COPY_SRC,
-                        )
-                        .fill_from_slice(&component_data);
-
-                    for (i, c) in components.iter().enumerate() {
-                        let c_offset = (i * size_of::<Component>()) as u64;
-                        encoder.copy_buffer_to_buffer(
-                            &tmp_buf,
-                            c_offset,
-                            &c.uniforms.pass_vert.buffer,
-                            0,
-                            std::mem::size_of::<PassVert>() as u64,
-                        );
-                        encoder.copy_buffer_to_buffer(
-                            &tmp_buf,
-                            c_offset + size_of::<Uniform<PassVert>>() as u64,
-                            &c.uniforms.pass_frag.buffer,
-                            0,
-                            std::mem::size_of::<PassFrag>() as u64,
-                        );
-                    }
                 }
 
                 {
