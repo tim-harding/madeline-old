@@ -14,6 +14,6 @@ layout (set = 1, binding = 0) uniform Pass {
 
 void main() {
     v_TexCoord = position;
-    vec2 pos = position / globals.screen_size;// + pass.offset;
+    vec2 pos = (position + pass.offset) / globals.screen_size ;
     gl_Position = vec4(pos, 0.0, 1.0);
 }

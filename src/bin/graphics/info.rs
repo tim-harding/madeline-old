@@ -1,9 +1,7 @@
-use super::utils::{self, Globals, PassFrag, PassVert};
-use super::GraphGeo;
+use super::utils::{self, Globals};
 use std::mem::size_of;
 
 pub struct Info {
-    pub geo: GraphGeo,
     pub globals_bind_group: wgpu::BindGroup,
     pub pass_bind_group_layout: wgpu::BindGroupLayout,
     pub pipeline: wgpu::RenderPipeline,
@@ -16,8 +14,6 @@ impl Info {
         device: &wgpu::Device,
         sc_desc: wgpu::SwapChainDescriptor,
     ) -> Result<Self, &'static str> {
-        let geo = GraphGeo::new(device)?;
-
         let globals_uniform = utils::buffer::<Globals>(&device);
 
         let globals_bind_group_layout =
@@ -64,7 +60,7 @@ impl Info {
 
             pipeline: device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 layout: &device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&globals_bind_group_layout/*, &pass_bind_group_layout*/],
+                    bind_group_layouts: &[&globals_bind_group_layout, &pass_bind_group_layout],
                 }),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
                     module: &shader_module(&device, "shaders/vert.spv")?,
@@ -115,7 +111,6 @@ impl Info {
             msaa_frame: utils::create_msaa_buffer(&device, &sc_desc),
 
             pass_bind_group_layout,
-            geo,
             globals_uniform,
         })
     }

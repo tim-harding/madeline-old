@@ -1,21 +1,23 @@
 mod graphics;
+use crate::graphics::GraphGeo;
 use graphics::{
     utils::{self, Globals, PassFrag, PassVert, Vec2, Vec3},
     Info, Mesh,
 };
 use std::mem::size_of;
 
-struct Component<'a> {
-    mesh: &'a Mesh,
-    bind_group: wgpu::BindGroup,
-    uniforms: Uniforms,
+#[repr(C)]
+struct Component {
+    pub uniforms: Uniforms,
+    pub bind_group: wgpu::BindGroup,
+    pub mesh: Mesh,
 }
 
-impl<'a> Component<'a> {
+impl Component {
     pub fn new(
         device: &wgpu::Device,
-        layout: &'a wgpu::BindGroupLayout,
-        mesh: &'a Mesh,
+        layout: &wgpu::BindGroupLayout,
+        mesh: Mesh,
         offset: Vec2,
         color: Vec3,
     ) -> Self {
@@ -57,8 +59,8 @@ impl<'a> Component<'a> {
 }
 
 struct Uniform<T> {
-    data: T,
-    buffer: wgpu::Buffer,
+    pub data: T,
+    pub buffer: wgpu::Buffer,
 }
 
 struct Uniforms {
@@ -123,32 +125,30 @@ fn main() -> Result<(), &'static str> {
         (swapchain, info)
     };
 
-    let comp = |mesh, offset, color| {
-        Component::new(&device, &info.pass_bind_group_layout, mesh, offset, color)
-    };
+    let components = {
+        let comp = |mesh, offset, color| {
+            Component::new(&device, &info.pass_bind_group_layout, mesh, offset, color)
+        };
 
-    let components = [
-        comp(
-            &info.geo.rect,
-            Vec2::new(0.0, 0.0),
-            Vec3::new(1.0, 0.0, 0.0),
-        ),
-        comp(
-            &info.geo.rect_outline,
-            Vec2::new(30.0, 30.0),
-            Vec3::new(0.0, 1.0, 0.0),
-        ),
-        comp(
-            &info.geo.slot,
-            Vec2::new(60.0, 60.0),
-            Vec3::new(0.0, 0.0, 1.0),
-        ),
-        comp(
-            &info.geo.trapezoid,
-            Vec2::new(90.0, 90.0),
-            Vec3::new(0.0, 0.0, 0.0),
-        ),
-    ];
+        let geo = GraphGeo::new(&device)?;
+        let GraphGeo {
+            rect,
+            rect_outline,
+            slot,
+            trapezoid,
+        } = geo;
+
+        [
+            comp(rect, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
+            comp(
+                rect_outline,
+                Vec2::new(30.0, 30.0),
+                Vec3::new(0.0, 1.0, 0.0),
+            ),
+            comp(slot, Vec2::new(60.0, 60.0), Vec3::new(0.0, 0.0, 1.0)),
+            comp(trapezoid, Vec2::new(90.0, 90.0), Vec3::new(0.0, 0.0, 0.0)),
+        ]
+    };
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -185,17 +185,57 @@ fn main() -> Result<(), &'static str> {
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
 
-                // Repopulate globals uniform
-                let tmp_buf = device
-                    .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-                    .fill_from_slice(&[globals]);
-                encoder.copy_buffer_to_buffer(
-                    &tmp_buf,
-                    0,
-                    &info.globals_uniform,
-                    0,
-                    std::mem::size_of::<Globals>() as u64,
-                );
+                {
+                    // Repopulate globals uniform
+                    let tmp_buf = device
+                        .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+                        .fill_from_slice(&[globals]);
+                    encoder.copy_buffer_to_buffer(
+                        &tmp_buf,
+                        0,
+                        &info.globals_uniform,
+                        0,
+                        std::mem::size_of::<Globals>() as u64,
+                    );
+                }
+
+                {
+                    // Repopulate pass uniforms
+                    // Component contains some unnecessary bytes,
+                    // perhaps there's a more compact way of getting
+                    // this data to the buffer.
+                    let component_data = unsafe {
+                        std::slice::from_raw_parts(
+                            components.as_ptr() as *const u8,
+                            components.len() * size_of::<Component>(),
+                        )
+                    };
+
+                    let tmp_buf = device
+                        .create_buffer_mapped(
+                            components.len() * size_of::<Component>(),
+                            wgpu::BufferUsage::COPY_SRC,
+                        )
+                        .fill_from_slice(&component_data);
+
+                    for (i, c) in components.iter().enumerate() {
+                        let c_offset = (i * size_of::<Component>()) as u64;
+                        encoder.copy_buffer_to_buffer(
+                            &tmp_buf,
+                            c_offset,
+                            &c.uniforms.pass_vert.buffer,
+                            0,
+                            std::mem::size_of::<PassVert>() as u64,
+                        );
+                        encoder.copy_buffer_to_buffer(
+                            &tmp_buf,
+                            c_offset + size_of::<Uniform<PassVert>>() as u64,
+                            &c.uniforms.pass_frag.buffer,
+                            0,
+                            std::mem::size_of::<PassFrag>() as u64,
+                        );
+                    }
+                }
 
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -216,10 +256,12 @@ fn main() -> Result<(), &'static str> {
                     rpass.set_pipeline(&info.pipeline);
                     rpass.set_bind_group(0, &info.globals_bind_group, &[]);
 
-                    // rpass.set_bind_group(1, &info.pass_bind_group, &[]);
-                    rpass.set_index_buffer(&info.geo.rect.ibo, 0);
-                    rpass.set_vertex_buffers(0, &[(&info.geo.rect.vbo, 0)]);
-                    rpass.draw_indexed(0..info.geo.rect.indices as u32, 0, 0..1);
+                    for c in components.iter() {
+                        rpass.set_bind_group(1, &c.bind_group, &[]);
+                        rpass.set_index_buffer(&c.mesh.ibo, 0);
+                        rpass.set_vertex_buffers(0, &[(&c.mesh.vbo, 0)]);
+                        rpass.draw_indexed(0..c.mesh.indices as u32, 0, 0..1);
+                    }
                 }
 
                 let command_buf = encoder.finish();
