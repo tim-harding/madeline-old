@@ -2,7 +2,7 @@ mod graphics;
 use crate::graphics::GraphGeo;
 use graphics::{
     quad,
-    utils::{self, Globals, PassFrag, PassVert, Vec2, Vec4},
+    utils::{self, Globals, PassFrag, PassVert, Vec2, Vec3},
     Info, Mesh,
 };
 use std::mem::size_of;
@@ -21,7 +21,7 @@ impl Component {
         layout: &wgpu::BindGroupLayout,
         mesh: Mesh,
         offset: Vec2,
-        color: Vec4,
+        color: Vec3,
     ) -> Self {
         let pass_vert = device
             .create_buffer_mapped(1, wgpu::BufferUsage::UNIFORM)
@@ -120,8 +120,8 @@ fn main() -> Result<(), &'static str> {
         } = geo;
 
         [
-            comp(rect_outline, Vec2::new(0.0, 0.0), Vec4::new(0.0, 0.0, 0.0, 1.0)),
-            comp(rect, Vec2::new(1.0, 1.0), Vec4::new(0.0, 1.0, 0.0, 0.0)),
+            comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
+            comp(rect, Vec2::new(1.0, 1.0), Vec3::new(0.0, 1.0, 0.0)),
             // comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
             // comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
         ]
