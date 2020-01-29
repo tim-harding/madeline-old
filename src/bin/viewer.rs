@@ -2,7 +2,7 @@ mod graphics;
 use crate::graphics::GraphGeo;
 use graphics::{
     quad,
-    utils::{Globals, PassFrag, PassVert, Vec2, Vec3},
+    utils::{self, Globals, PassFrag, PassVert, Vec2, Vec3},
     Info, Mesh,
 };
 use std::mem::size_of;
@@ -179,10 +179,17 @@ fn main() -> Result<(), &'static str> {
                     visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::Sampler,
                 },
+                wgpu::BindGroupLayoutBinding {
+                    binding: 2,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                },
             ],
         });
 
-    let resolution_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+    let globals_uniform = utils::buffer::<Globals>(&device);
+
+    let resolution_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &resolution_bind_group_layout,
         bindings: &[
             wgpu::Binding {
@@ -192,6 +199,13 @@ fn main() -> Result<(), &'static str> {
             wgpu::Binding {
                 binding: 1,
                 resource: wgpu::BindingResource::Sampler(&resolution_sampler),
+            },
+            wgpu::Binding {
+                binding: 2,
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &globals_uniform,
+                    range: 0..size_of::<Globals>() as u64,
+                },
             },
         ],
     });
@@ -250,20 +264,12 @@ fn main() -> Result<(), &'static str> {
         alpha_to_coverage_enabled: false,
     });
 
-    {
-        let mut init_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor{ todo: 0 });
-        let tmp_buf = device
-            .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-            .fill_from_slice(&[Globals{ node_size: Vec2::new(182.0, 56.0)}]);
-        init_encoder.copy_buffer_to_buffer(
-            &tmp_buf,
-            0,
-            &info.globals_uniform,
-            0,
-            std::mem::size_of::<Globals>() as u64,
-        );
-        queue.submit(&[init_encoder.finish()]);
-    }
+    let mut globals = Globals {
+        screen_size: Vec2::new(
+            window.inner_size().width as f32,
+            window.inner_size().height as f32,
+        ),
+    };
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -272,7 +278,8 @@ fn main() -> Result<(), &'static str> {
 
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    // globals.screen_size = Vec2::new(size.width as f32, size.height as f32);
+                    globals.screen_size = Vec2::new(size.width as f32, size.height as f32);
+                    swapchain = device.create_swap_chain(&surface, &swapchain_desc(size));
                     window.request_redraw();
                 }
 
@@ -298,6 +305,22 @@ fn main() -> Result<(), &'static str> {
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
 
                 {
+                    let mut init_encoder =
+                        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
+                    let tmp_buf = device
+                        .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+                        .fill_from_slice(&[globals]);
+                    init_encoder.copy_buffer_to_buffer(
+                        &tmp_buf,
+                        0,
+                        &globals_uniform,
+                        0,
+                        std::mem::size_of::<Globals>() as u64,
+                    );
+                    queue.submit(&[init_encoder.finish()]);
+                }
+
+                {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &node_texture_intermediate,
@@ -314,10 +337,8 @@ fn main() -> Result<(), &'static str> {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&info.pipeline);
-                    rpass.set_bind_group(0, &info.globals_bind_group, &[]);
-
                     for c in components.iter() {
-                        rpass.set_bind_group(1, &c.bind_group, &[]);
+                        rpass.set_bind_group(0, &c.bind_group, &[]);
                         rpass.set_index_buffer(&c.mesh.ibo, 0);
                         rpass.set_vertex_buffers(0, &[(&c.mesh.vbo, 0)]);
                         rpass.draw_indexed(0..c.mesh.indices as u32, 0, 0..1);
@@ -347,7 +368,6 @@ fn main() -> Result<(), &'static str> {
                     rpass.set_vertex_buffers(0, &[(&quad_vbo, 0)]);
                     rpass.draw_indexed(0..quad::INDICES.len() as u32, 0, 0..1);
                 }
-                
 
                 let command_buf = encoder.finish();
                 queue.submit(&[command_buf]);

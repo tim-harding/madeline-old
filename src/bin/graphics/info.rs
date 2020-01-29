@@ -1,11 +1,8 @@
-use super::utils::{self, Globals};
 use std::mem::size_of;
 
 pub struct Info {
-    pub globals_bind_group: wgpu::BindGroup,
     pub pass_bind_group_layout: wgpu::BindGroupLayout,
     pub pipeline: wgpu::RenderPipeline,
-    pub globals_uniform: wgpu::Buffer,
 }
 
 impl Info {
@@ -13,22 +10,6 @@ impl Info {
         device: &wgpu::Device,
         sc_desc: wgpu::SwapChainDescriptor,
     ) -> Result<Self, &'static str> {
-        let globals_uniform = utils::buffer::<Globals>(&device);
-
-        let globals_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutBinding {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        // Dynamic uniform buffers are used for
-                        // instancing, so each instance could,
-                        // for example, get a different transform matrix
-                        dynamic: false,
-                    },
-                }],
-            });
-
         let pass_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
@@ -46,20 +27,9 @@ impl Info {
             });
 
         Ok(Self {
-            globals_bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &globals_bind_group_layout,
-                bindings: &[wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &globals_uniform,
-                        range: 0..size_of::<Globals>() as u64,
-                    },
-                }],
-            }),
-
             pipeline: device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 layout: &device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&globals_bind_group_layout, &pass_bind_group_layout],
+                    bind_group_layouts: &[&pass_bind_group_layout],
                 }),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
                     module: &shader_module(&device, "shaders/node_rasterize/vert.spv")?,
@@ -108,7 +78,6 @@ impl Info {
             }),
 
             pass_bind_group_layout,
-            globals_uniform,
         })
     }
 }
