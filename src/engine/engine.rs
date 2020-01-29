@@ -54,7 +54,7 @@ impl Engine {
             .node_names
             .iter()
             .filter_map(|(k, v)| if *v == id { Some(k.clone()) } else { None })
-            .nth(0)
+            .next()
             .unwrap();
         self.node_names.remove(&to_remove);
     }

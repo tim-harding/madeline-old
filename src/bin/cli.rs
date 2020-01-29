@@ -58,7 +58,7 @@ fn main() -> Result<(), String> {
                     }
                     Err(e) => print!("{}", e),
                 };
-                println!("");
+                println!();
                 line.clear();
             }
             Ok(())

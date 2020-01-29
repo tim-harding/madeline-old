@@ -83,7 +83,7 @@ impl Into<ParseError> for String {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ParseError::Message(m) => write!(f, "{}\n", m),
+            ParseError::Message(m) => writeln!(f, "{}", m),
             ParseError::Empty => Ok(()),
         }
     }
