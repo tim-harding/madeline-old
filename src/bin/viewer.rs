@@ -136,7 +136,7 @@ fn main() -> Result<(), &'static str> {
             },
             array_layer_count: 1,
             mip_level_count: 1,
-            sample_count: 1,
+            sample_count: 8,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
@@ -263,7 +263,7 @@ fn main() -> Result<(), &'static str> {
                 shader_location: 0,
             }],
         }],
-        sample_count: 1,
+        sample_count: 8,
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
     });
