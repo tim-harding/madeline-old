@@ -19,9 +19,9 @@ pub fn create() -> Plugin {
 
 fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let bg = match inputs[0] {
-        Some(bg) => bg,
-        None => return Err(String::from("Invalid background input")),
-    };
+        Some(bg) => Ok(bg),
+        None => Err(String::from("Invalid background input")),
+    }?;
 
     let filter = {
         let size = controls[Parameters::Size as usize].as_uint();
