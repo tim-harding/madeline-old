@@ -32,10 +32,24 @@ pub struct Channel {
 }
 
 impl Channel {
-    pub fn new(size: Vec2U) -> Self {
+    pub fn black(size: Vec2U) -> Self {
         let count = size.area();
         let mut pixels = Vec::with_capacity(count);
         pixels.resize(count, 0.0);
+        Self { size, pixels }
+    }
+
+    // Using this instead of FromIterator because, 
+    // for Rayon, par_iter.collect_into_vec() can
+    // be more efficient. That method is only available 
+    // for rayon::slice::Iter, which the FromParallelIterator
+    // trait does not support. It is better to create the 
+    // vector separately using `collect_into_vec` and then
+    // construct the channel from that data. I don't want to be
+    // confusing by offering a FromIterator implementation
+    // but not a FromParallelIterator implementation.
+    pub fn from_elements(size: Vec2U, pixels: Vec<f32>) -> Self {
+        assert!(size.area() == pixels.len());
         Self { size, pixels }
     }
 
@@ -63,23 +77,9 @@ impl Channel {
         self.pixels.par_iter_mut()
     }
 
-    // Are these elements necessary or useful?
-    pub fn element(&self, pos: Vec2I) -> f32 {
-        match self.index_of(pos) {
-            Some(i) => self.pixels[i],
-            None => 0.0,
-        }
-    }
-
-    pub fn set_element(&mut self, pos: Vec2I, value: f32) {
-        if let Some(i) = self.index_of(pos) {
-            self.pixels[i] = value;
-        }
-    }
-
-    fn index_of(&self, pos: Vec2I) -> Option<usize> {
+    pub fn index_of(&self, pos: Vec2I) -> Option<usize> {
         let pos_u: Vec2U = pos.into();
-        if pos.x > 0 && pos.y > 0 && pos_u.x < self.size.x && pos_u.y < self.size.y {
+        if pos.x >= 0 && pos.y >= 0 && pos_u.x < self.size.x && pos_u.y < self.size.y {
             Some(pos_u.y * self.size.x + pos_u.x)
         } else {
             None
@@ -134,8 +134,12 @@ impl Image {
     pub fn from_desc(desc: Desc) -> Self {
         let mut channels = Vec::with_capacity(desc.channels);
         for _ in 0..desc.channels {
-            channels.push(Channel::new(desc.size));
+            channels.push(Channel::black(desc.size));
         }
+        Self { channels }
+    }
+
+    pub fn from_channels(channels: Vec<Channel>) -> Self {
         Self { channels }
     }
 
@@ -179,29 +183,5 @@ impl Index<usize> for Image {
 impl IndexMut<usize> for Image {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.channels[i]
-    }
-}
-
-impl std::iter::FromIterator<Channel> for Image {
-    fn from_iter<I>(src: I) -> Self
-    where
-        I: IntoIterator<Item = Channel>,
-    {
-        Self {
-            channels: src.into_iter().collect::<Vec<_>>(),
-        }
-    }
-}
-
-// May be more efficient to use par_iter.collect_into_vec(),
-// but this is more ergonomic
-impl rayon::iter::FromParallelIterator<Channel> for Image {
-    fn from_par_iter<I>(par_iter: I) -> Self
-    where
-        I: IntoParallelIterator<Item = Channel>,
-    {
-        Self {
-            channels: par_iter.into_par_iter().collect::<Vec<_>>(),
-        }
     }
 }

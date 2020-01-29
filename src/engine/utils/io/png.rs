@@ -29,10 +29,10 @@ pub fn load(file: &File) -> Result<Image, String> {
             let start = (y * size.x + x) * channel_count;
             let end = start + channel_count;
             let pixel = &img_data[start..end];
+            let pos: Vec2I = Vec2U::new(x, y).into();
+            let dst_index = image[0].index_of(pos).unwrap();
             for (i, channel) in pixel.iter().enumerate() {
-                let value = *channel as f32 / 255.0;
-                let pos: Vec2I = Vec2U::new(x, y).into();
-                image[i].set_element(pos, value);
+                image[i][dst_index] = *channel as f32 / 255.0;
             }
         }
     }

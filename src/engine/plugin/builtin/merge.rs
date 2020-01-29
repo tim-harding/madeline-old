@@ -47,20 +47,24 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                 for (y, (fg_line, alpha_line)) in fg_chan.lines().zip(fg[3].lines()).enumerate() {
                     for (x, (fg_e, alpha_e)) in fg_line.iter().zip(alpha_line.iter()).enumerate() {
                         let pos = translate + Vec2U::new(x, y).into();
-                        let bg_e = out_chan.element(pos);
-                        let value = *fg_e * alpha_e + bg_e * (1.0 - *alpha_e);
-                        out_chan.set_element(pos, value);
+                        if let Some(index) = out_chan.index_of(pos) {
+                            let bg_e = out_chan.raw()[index];
+                            let value = *fg_e * alpha_e + bg_e * (1.0 - *alpha_e);
+                            out_chan.raw_mut()[index] = value;
+                        }
                     }
                 }
             });
 
-        // Cannot borrow `out` as mutable
+        let out_a = &mut out[3];
         for (y, fg_line) in fg[3].lines().enumerate() {
             for (x, fg_e) in fg_line.iter().enumerate() {
                 let pos = translate + Vec2U::new(x, y).into();
-                let bg_e = out[3].element(pos);
-                let value = 1.0 - (1.0 - fg_e) * (1.0 - bg_e);
-                out[3].set_element(pos, value);
+                if let Some(index) = out_a.index_of(pos) {
+                    let bg_e = out_a.raw()[index];
+                    let value = 1.0 - (1.0 - fg_e) * (1.0 - bg_e);
+                    out_a.raw_mut()[index] = value;
+                }
             }
         }
     } else {
@@ -71,7 +75,9 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                 for (y, fg_line) in fg_c.lines().enumerate() {
                     for (x, fg_e) in fg_line.iter().enumerate() {
                         let pos = translate + Vec2U::new(x, y).into();
-                        out_c.set_element(pos, *fg_e);
+                        if let Some(index) = out_c.index_of(pos) {
+                            out_c[index] = *fg_e;
+                        }
                     }
                 }
             })
