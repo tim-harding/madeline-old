@@ -28,7 +28,7 @@ impl Vec3 {
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug)]
 pub struct Globals {
-    pub screen_size: Vec2,
+    pub node_size: Vec2,
 }
 
 #[repr(C)]

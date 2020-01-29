@@ -99,14 +99,7 @@ fn main() -> Result<(), &'static str> {
         limits: wgpu::Limits::default(),
     });
 
-    let mut globals = {
-        let size = window.inner_size();
-        Globals {
-            screen_size: Vec2::new(size.width as f32, size.height as f32),
-        }
-    };
-
-    let (mut swapchain, mut info) = {
+    let (mut swapchain, info) = {
         let desc = swapchain_desc(window.inner_size());
         let swapchain = device.create_swap_chain(&surface, &desc);
         let info = Info::new(&device, desc)?;
@@ -127,10 +120,10 @@ fn main() -> Result<(), &'static str> {
         } = geo;
 
         [
-            comp(rect, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
-            comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
-            comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 0.0, 1.0)),
-            comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
+            // comp(rect, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            // comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            // comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
         ]
     };
 
@@ -143,7 +136,7 @@ fn main() -> Result<(), &'static str> {
             },
             array_layer_count: 1,
             mip_level_count: 1,
-            sample_count: 8,
+            sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: swapchain_desc(window.inner_size()).format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
@@ -257,6 +250,21 @@ fn main() -> Result<(), &'static str> {
         alpha_to_coverage_enabled: false,
     });
 
+    {
+        let mut init_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor{ todo: 0 });
+        let tmp_buf = device
+            .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
+            .fill_from_slice(&[Globals{ node_size: Vec2::new(182.0, 56.0)}]);
+        init_encoder.copy_buffer_to_buffer(
+            &tmp_buf,
+            0,
+            &info.globals_uniform,
+            0,
+            std::mem::size_of::<Globals>() as u64,
+        );
+        queue.submit(&[init_encoder.finish()]);
+    }
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
@@ -264,7 +272,7 @@ fn main() -> Result<(), &'static str> {
 
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    globals.screen_size = Vec2::new(size.width as f32, size.height as f32);
+                    // globals.screen_size = Vec2::new(size.width as f32, size.height as f32);
                     window.request_redraw();
                 }
 
@@ -290,20 +298,6 @@ fn main() -> Result<(), &'static str> {
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
 
                 {
-                    // Repopulate globals uniform
-                    let tmp_buf = device
-                        .create_buffer_mapped(1, wgpu::BufferUsage::COPY_SRC)
-                        .fill_from_slice(&[globals]);
-                    encoder.copy_buffer_to_buffer(
-                        &tmp_buf,
-                        0,
-                        &info.globals_uniform,
-                        0,
-                        std::mem::size_of::<Globals>() as u64,
-                    );
-                }
-
-                {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &node_texture_intermediate,
@@ -311,10 +305,10 @@ fn main() -> Result<(), &'static str> {
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {
-                                r: 0.0,
+                                r: 1.0,
                                 g: 0.0,
                                 b: 0.0,
-                                a: 0.0,
+                                a: 1.0,
                             },
                         }],
                         depth_stencil_attachment: None,
@@ -353,6 +347,7 @@ fn main() -> Result<(), &'static str> {
                     rpass.set_vertex_buffers(0, &[(&quad_vbo, 0)]);
                     rpass.draw_indexed(0..quad::INDICES.len() as u32, 0, 0..1);
                 }
+                
 
                 let command_buf = encoder.finish();
                 queue.submit(&[command_buf]);
