@@ -45,7 +45,7 @@ impl GraphGeo {
     pub fn new(device: &wgpu::Device) -> Result<Self, &'static str> {
         Ok(Self {
             rect: build(device, |b| rounded_rect(b, 90.0, 27.0, 5.0))?,
-            rect_outline: build(device, |b| rounded_rect(b, 92.0, 29.0, 11.0))?,
+            rect_outline: build(device, |b| rounded_rect(b, 92.0, 29.0, 5.0))?,
             trapezoid: build(device, |b| trapezoid(b, 100.0, 100.0, 25.0))?,
             slot: build(device, |b| circle(b, 10.0))?,
         })

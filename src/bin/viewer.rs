@@ -139,6 +139,22 @@ fn main() -> Result<(), &'static str> {
             sample_count: 8,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        })
+        .create_default_view();
+
+    let node_texture_final = device
+        .create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: 92,
+                height: 29,
+                depth: 1,
+            },
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
         })
         .create_default_view();
@@ -194,7 +210,7 @@ fn main() -> Result<(), &'static str> {
         bindings: &[
             wgpu::Binding {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(&node_texture_intermediate),
+                resource: wgpu::BindingResource::TextureView(&node_texture_final),
             },
             wgpu::Binding {
                 binding: 1,
@@ -263,7 +279,7 @@ fn main() -> Result<(), &'static str> {
                 shader_location: 0,
             }],
         }],
-        sample_count: 8,
+        sample_count: 1,
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
     });
@@ -328,7 +344,7 @@ fn main() -> Result<(), &'static str> {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &node_texture_intermediate,
-                            resolve_target: None,
+                            resolve_target: Some(&node_texture_final),
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {

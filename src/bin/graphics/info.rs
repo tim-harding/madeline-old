@@ -72,7 +72,7 @@ impl Info {
                         shader_location: 0,
                     }],
                 }],
-                sample_count: 1,
+                sample_count: 8,
                 sample_mask: !0,
                 alpha_to_coverage_enabled: false,
             }),
