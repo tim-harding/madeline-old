@@ -6,7 +6,6 @@ pub struct Info {
     pub pass_bind_group_layout: wgpu::BindGroupLayout,
     pub pipeline: wgpu::RenderPipeline,
     pub globals_uniform: wgpu::Buffer,
-    pub msaa_frame: wgpu::TextureView,
 }
 
 impl Info {
@@ -63,11 +62,11 @@ impl Info {
                     bind_group_layouts: &[&globals_bind_group_layout, &pass_bind_group_layout],
                 }),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
-                    module: &shader_module(&device, "shaders/vert.spv")?,
+                    module: &shader_module(&device, "shaders/node_rasterize/vert.spv")?,
                     entry_point: "main",
                 },
                 fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                    module: &shader_module(&device, "shaders/frag.spv")?,
+                    module: &shader_module(&device, "shaders/node_rasterize/frag.spv")?,
                     entry_point: "main",
                 }),
                 rasterization_state: Some(wgpu::RasterizationStateDescriptor {
@@ -103,12 +102,10 @@ impl Info {
                         shader_location: 0,
                     }],
                 }],
-                sample_count: utils::SAMPLES,
+                sample_count: 8,
                 sample_mask: !0,
                 alpha_to_coverage_enabled: false,
             }),
-
-            msaa_frame: utils::create_msaa_buffer(&device, &sc_desc),
 
             pass_bind_group_layout,
             globals_uniform,
