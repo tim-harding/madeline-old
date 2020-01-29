@@ -4,6 +4,7 @@ use crate::{
     plugin::{self, *},
     utils::{Value, Vec2U},
 };
+use rayon::prelude::*;
 use std::cmp::{max, min};
 
 enum Parameters {
@@ -24,7 +25,6 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
 
     let mut desc = bg.desc();
     desc.channels = 0;
-    let mut out = Image::from_desc(desc);
 
     let size: usize = controls[Parameters::Size as usize].as_uint();
     let mut filter = Vec::with_capacity(size);
@@ -34,12 +34,13 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         filter.push(value);
     }
 
-    for channel in bg.channels() {
-        let tmp = blur_axis(&channel, &filter);
-        out.push(blur_axis(&tmp, &filter));
-    }
-
-    Ok(out)
+    Ok(bg
+        .par_channels()
+        .map(|channel| {
+            let tmp = blur_axis(&channel, &filter);
+            blur_axis(&tmp, &filter)
+        })
+        .collect::<Image>())
 }
 
 fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {

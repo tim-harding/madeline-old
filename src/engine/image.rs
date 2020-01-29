@@ -166,11 +166,6 @@ impl Image {
     pub fn par_channels_mut(&mut self) -> ParIterMut<Channel> {
         self.channels.par_iter_mut()
     }
-
-    // Replace with FromIterator stuff
-    pub fn push(&mut self, channel: Channel) {
-        self.channels.push(channel)
-    }
 }
 
 impl Index<usize> for Image {
@@ -184,5 +179,29 @@ impl Index<usize> for Image {
 impl IndexMut<usize> for Image {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.channels[i]
+    }
+}
+
+impl std::iter::FromIterator<Channel> for Image {
+    fn from_iter<I>(src: I) -> Self
+    where
+        I: IntoIterator<Item = Channel>,
+    {
+        Self {
+            channels: src.into_iter().collect::<Vec<_>>(),
+        }
+    }
+}
+
+// May be more efficient to use par_iter.collect_into_vec(),
+// but this is more ergonomic
+impl rayon::iter::FromParallelIterator<Channel> for Image {
+    fn from_par_iter<I>(par_iter: I) -> Self
+    where
+        I: IntoParallelIterator<Item = Channel>,
+    {
+        Self {
+            channels: par_iter.into_par_iter().collect::<Vec<_>>(),
+        }
     }
 }

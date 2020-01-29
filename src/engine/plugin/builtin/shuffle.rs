@@ -4,6 +4,7 @@ use crate::{
     plugin::{self, *},
     utils::Value,
 };
+use rayon::prelude::*;
 
 enum Parameters {
     R,
@@ -29,7 +30,6 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         None => return Err("Invalid background input".to_string()),
     };
 
-    let mut out = Image::default();
     let remap = [
         controls[Parameters::R as usize].as_uint(),
         controls[Parameters::G as usize].as_uint(),
@@ -37,12 +37,13 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         controls[Parameters::A as usize].as_uint(),
     ];
 
-    for remap in remap.iter() {
-        let channel = match bg.channels().nth(*remap) {
-            Some(channel) => channel.clone(),
-            None => Channel::new(bg.desc().size),
-        };
-        out.push(channel);
-    }
-    Ok(out)
+    Ok(remap
+        .par_iter()
+        .map(|remap| {
+            bg.channels()
+                .nth(*remap)
+                .cloned()
+                .unwrap_or(Channel::new(bg.desc().size))
+        })
+        .collect::<Image>())
 }
