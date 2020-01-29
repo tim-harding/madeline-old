@@ -120,10 +120,10 @@ fn main() -> Result<(), &'static str> {
         } = geo;
 
         [
-            // comp(rect, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
-            // comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
-            comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
-            // comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
+            comp(rect, Vec2::new(1.0, 1.0), Vec3::new(0.0, 1.0, 0.0)),
+            // comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
         ]
     };
 
