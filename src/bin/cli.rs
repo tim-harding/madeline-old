@@ -40,7 +40,7 @@ fn main() -> Result<(), String> {
             for line in src.lines() {
                 match parser.parse(line) {
                     Ok(statement) => mdl::apply(&mut engine, &statement)?,
-                    Err(e) => println!("{}", e),
+                    Err(e) => print!("{}", e),
                 }
             }
             let comp = engine.render()?;
@@ -56,7 +56,7 @@ fn main() -> Result<(), String> {
                             println!("{}", e);
                         }
                     }
-                    Err(e) => println!("{}", e),
+                    Err(e) => print!("{}", e),
                 };
                 println!("");
                 line.clear();

@@ -63,6 +63,33 @@ enum Token {
 }
 
 #[derive(Debug, Clone)]
+pub enum ParseError {
+    Empty,
+    Message(String),
+}
+
+impl Into<ParseError> for &str {
+    fn into(self) -> ParseError {
+        ParseError::Message(self.into())
+    }
+}
+
+impl Into<ParseError> for String {
+    fn into(self) -> ParseError {
+        ParseError::Message(self)
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::Message(m) => write!(f, "{}\n", m),
+            ParseError::Empty => Ok(()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Parser {
     keywords: TokenMap,
     tokens: Vec<Token>,
@@ -84,8 +111,8 @@ impl Default for Parser {
 }
 
 impl Parser {
-    pub fn parse(&self, src: &str) -> Result<Statement, String> {
-        let tokens = tokenize(src, &self.keywords)?;
+    pub fn parse(&self, src: &str) -> Result<Statement, ParseError> {
+        let tokens = tokenize(src, &self.keywords).map_err(|e| e.into())?;
         parse(&tokens)
     }
 }
@@ -150,17 +177,17 @@ fn consume(iter: &mut Peekable<Chars>, matcher: fn(char) -> bool, seed: Option<c
 }
 
 // TODO: Better help for incorrect statements
-fn parse(tokens: &[Token]) -> Result<Statement, String> {
+fn parse(tokens: &[Token]) -> Result<Statement, ParseError> {
     let mut iter = tokens.iter().peekable();
     match iter.peek() {
         Some(token) => match token {
             Token::Glob => glob(&mut iter).map_err(|_| "Invalid glob".into()),
             Token::New => new(&mut iter).map_err(|_| "Invalid new".into()),
             Token::Delete => delete(&mut iter).map_err(|_| "Invalid delete".into()),
-            Token::Identifier(_) => set(&mut iter),
+            Token::Identifier(_) => set(&mut iter).map_err(|e| e.into()),
             _ => Err("Unrecognized statement".into()),
         },
-        None => Err("Empty statement".into()),
+        None => Err(ParseError::Empty),
     }
 }
 
