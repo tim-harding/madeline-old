@@ -123,22 +123,22 @@ fn main() -> Result<(), &'static str> {
             comp(rect_outline, Vec2::new(0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
             comp(rect, Vec2::new(1.0, 1.0), Vec3::new(0.0, 1.0, 0.0)),
             // comp(slot, Vec2::new(0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
-            comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
+            // comp(trapezoid, Vec2::new(0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)),
         ]
     };
 
     let node_texture_intermediate = device
         .create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
-                width: 182,
-                height: 56,
+                width: 92,
+                height: 29,
                 depth: 1,
             },
             array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: swapchain_desc(window.inner_size()).format,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
         })
         .create_default_view();
@@ -243,8 +243,12 @@ fn main() -> Result<(), &'static str> {
         }),
         primitive_topology: wgpu::PrimitiveTopology::TriangleList,
         color_states: &[wgpu::ColorStateDescriptor {
-            format: swapchain_desc(window.inner_size()).format,
-            color_blend: wgpu::BlendDescriptor::REPLACE,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            color_blend: wgpu::BlendDescriptor{
+                src_factor: wgpu::BlendFactor::SrcAlpha,
+                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                operation: wgpu::BlendOperation::Add,
+            },
             alpha_blend: wgpu::BlendDescriptor::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
         }],
@@ -328,10 +332,10 @@ fn main() -> Result<(), &'static str> {
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {
-                                r: 1.0,
+                                r: 0.0,
                                 g: 0.0,
                                 b: 0.0,
-                                a: 1.0,
+                                a: 0.0,
                             },
                         }],
                         depth_stencil_attachment: None,

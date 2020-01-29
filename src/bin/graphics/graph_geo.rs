@@ -7,7 +7,7 @@ use lyon::{
     tessellation,
 };
 
-const TOLERANCE: f32 = 1.0;
+const TOLERANCE: f32 = 0.5;
 
 type IndexFormat = u16;
 type Geometry = tessellation::VertexBuffers<Point, IndexFormat>;
@@ -44,10 +44,10 @@ pub struct GraphGeo {
 impl GraphGeo {
     pub fn new(device: &wgpu::Device) -> Result<Self, &'static str> {
         Ok(Self {
-            rect: build(device, |b| rounded_rect(b, 180.0, 54.0, 10.0))?,
-            rect_outline: build(device, |b| rounded_rect(b, 182.0, 56.0, 11.0))?,
-            trapezoid: build(device, |b| trapezoid(b, 200.0, 200.0, 50.0))?,
-            slot: build(device, |b| circle(b, 20.0))?,
+            rect: build(device, |b| rounded_rect(b, 90.0, 27.0, 5.0))?,
+            rect_outline: build(device, |b| rounded_rect(b, 92.0, 29.0, 11.0))?,
+            trapezoid: build(device, |b| trapezoid(b, 100.0, 100.0, 25.0))?,
+            slot: build(device, |b| circle(b, 10.0))?,
         })
     }
 }

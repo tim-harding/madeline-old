@@ -10,5 +10,5 @@ layout (set = 0, binding = 2) uniform Globals {
 
 void main() {
     v_TexCoord = a_Pos;
-    gl_Position = vec4(a_Pos * vec2(182, 56) / globals.screen_size, 0.0, 1.0);
+    gl_Position = vec4(a_Pos * vec2(92, 29) / globals.screen_size * vec2(2), 0.0, 1.0);
 }

@@ -7,6 +7,6 @@ layout (set = 0, binding = 0) uniform Pass {
 } pass;
 
 void main() {
-    vec2 pos = (position + pass.offset) / vec2(182, 56) - 1.0;
+    vec2 pos = (position + pass.offset) / vec2(92, 29) * vec2(2.0) - 1.0;
     gl_Position = vec4(pos, 0.0, 1.0);
 }
