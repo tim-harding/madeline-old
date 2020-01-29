@@ -11,7 +11,6 @@ pub struct Engine {
     pub viewing: usize,
 
     pub plugins: Table<Plugin>,
-    // Consider whether names should be stored only here, as with nodes
     pub plugin_names: HashMap<String, Id>,
 
     pub nodes: Table<Node>,

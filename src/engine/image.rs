@@ -33,17 +33,17 @@ pub struct Channel {
 
 impl Channel {
     pub fn black(size: Vec2U) -> Self {
-        let count = size.area();
-        let mut pixels = Vec::with_capacity(count);
-        pixels.resize(count, 0.0);
-        Self { size, pixels }
+        Self {
+            size,
+            pixels: vec![0.0; size.area()],
+        }
     }
 
-    // Using this instead of FromIterator because, 
+    // Using this instead of FromIterator because,
     // for Rayon, par_iter.collect_into_vec() can
-    // be more efficient. That method is only available 
+    // be more efficient. That method is only available
     // for rayon::slice::Iter, which the FromParallelIterator
-    // trait does not support. It is better to create the 
+    // trait does not support. It is better to create the
     // vector separately using `collect_into_vec` and then
     // construct the channel from that data. I don't want to be
     // confusing by offering a FromIterator implementation
@@ -132,11 +132,9 @@ pub struct Image {
 
 impl Image {
     pub fn from_desc(desc: Desc) -> Self {
-        let mut channels = Vec::with_capacity(desc.channels);
-        for _ in 0..desc.channels {
-            channels.push(Channel::black(desc.size));
+        Self {
+            channels: vec![Channel::black(desc.size); desc.channels],
         }
-        Self { channels }
     }
 
     pub fn from_channels(channels: Vec<Channel>) -> Self {

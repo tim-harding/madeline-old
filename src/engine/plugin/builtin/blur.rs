@@ -23,27 +23,32 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         None => return Err(String::from("Invalid background input")),
     };
 
-    let size: usize = controls[Parameters::Size as usize].as_uint();
-    let mut filter = Vec::with_capacity(size);
-    let samples = 1 + size * 2;
-    for i in 0..samples {
-        let value = sample(i, size);
-        filter.push(value);
-    }
+    let filter = {
+        let size = controls[Parameters::Size as usize].as_uint();
+        let f_size = size as f32;
+        (0..1 + size * 2)
+            .map(|i| {
+                let x = i as f32 - f_size;
+                let x = (1.0 - x.abs() / f_size) / f_size;
+                let rcp = 1.0 - x;
+                rcp * x * x + x * (1.0 - rcp * rcp)
+            })
+            .collect::<Vec<_>>()
+    };
 
-    Ok(Image::from_channels(bg
-        .par_channels()
-        .map(|channel| {
-            let tmp = blur_axis(&channel, &filter);
-            blur_axis(&tmp, &filter)
-        })
-        .collect::<Vec<_>>()))
+    Ok(Image::from_channels(
+        bg.par_channels()
+            .map(|channel| {
+                let tmp = blur_axis(&channel, &filter);
+                blur_axis(&tmp, &filter)
+            })
+            .collect::<Vec<_>>(),
+    ))
 }
 
 fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
     let max_dim = channel.size().x as isize - 1;
     let flipped = Vec2U::new(channel.size().y, channel.size().x);
-    // Try using from_elements to implement this
     let mut out = Channel::black(flipped);
     let size = (filter.len() / 2 - 1) as isize;
     for y in 0..channel.size().y {
@@ -61,15 +66,4 @@ fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
         }
     }
     out
-}
-
-fn sample(i: usize, size: usize) -> f32 {
-    let size = size as f32;
-    let local = i as f32 - size;
-    gauss(1.0 - local.abs() / size) / size
-}
-
-fn gauss(x: f32) -> f32 {
-    let rcp = 1.0 - x;
-    rcp * x * x + x * (1.0 - rcp * rcp)
 }
