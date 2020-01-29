@@ -1,9 +1,17 @@
 use crate::utils::{Vec2I, Vec2U};
-use std::{
-    mem,
-    ops::{Index, IndexMut},
-    slice::{Iter, IterMut},
+use rayon::{
+    prelude::*,
+    slice::{Iter as ParIter, IterMut as ParIterMut},
 };
+use std::{
+    ops::{Index, IndexMut},
+    slice::{Iter as StdIter, IterMut as StdIterMut},
+};
+
+type StdLines<'a> = std::slice::ChunksExact<'a, f32>;
+type StdLinesMut<'a> = std::slice::ChunksExactMut<'a, f32>;
+type ParLines<'a> = rayon::slice::Chunks<'a, f32>;
+type ParLinesMut<'a> = rayon::slice::ChunksMut<'a, f32>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Desc {
@@ -35,14 +43,27 @@ impl Channel {
         self.size
     }
 
-    pub fn elements(&self) -> Iter<f32> {
+    pub fn elements(&self) -> StdIter<f32> {
         self.pixels.iter()
     }
 
-    pub fn elements_mut(&mut self) -> IterMut<f32> {
+    pub fn elements_mut(&mut self) -> StdIterMut<f32> {
         self.pixels.iter_mut()
     }
 
+    // Callers should probably use .chunks() with this
+    // or the step size will be too small for parallelism
+    // to be an effective tool
+    pub fn par_elements(&self) -> ParIter<f32> {
+        self.pixels.par_iter()
+    }
+
+    // Samesies
+    pub fn par_elements_mut(&mut self) -> ParIterMut<f32> {
+        self.pixels.par_iter_mut()
+    }
+
+    // Are these elements necessary or useful?
     pub fn element(&self, pos: Vec2I) -> f32 {
         match self.index_of(pos) {
             Some(i) => self.pixels[i],
@@ -73,12 +94,20 @@ impl Channel {
         self.pixels.as_mut_slice()
     }
 
-    pub fn lines(&self) -> LineIter {
-        LineIter::new(self)
+    pub fn lines(&self) -> StdLines {
+        self.pixels.chunks_exact(self.size.x)
     }
 
-    pub fn lines_mut(&mut self) -> LineIterMut {
-        LineIterMut::new(self)
+    pub fn lines_mut(&mut self) -> StdLinesMut {
+        self.pixels.chunks_exact_mut(self.size.x)
+    }
+
+    pub fn par_lines(&self) -> ParLines {
+        self.pixels.par_chunks(self.size.x)
+    }
+
+    pub fn par_lines_mut(&mut self) -> ParLinesMut {
+        self.pixels.par_chunks_mut(self.size.x)
     }
 }
 
@@ -93,63 +122,6 @@ impl Index<usize> for Channel {
 impl IndexMut<usize> for Channel {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.pixels[i]
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct LineIter<'a> {
-    remaining: &'a [f32],
-    line_length: usize,
-}
-
-impl<'a> LineIter<'a> {
-    pub fn new(channel: &'a Channel) -> Self {
-        Self {
-            remaining: channel.raw(),
-            line_length: channel.size().x,
-        }
-    }
-}
-
-impl<'a> Iterator for LineIter<'a> {
-    type Item = Iter<'a, f32>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining.is_empty() {
-            return None;
-        }
-        let (head, tail) = self.remaining.split_at(self.line_length);
-        self.remaining = tail;
-        Some(head.iter())
-    }
-}
-
-pub struct LineIterMut<'a> {
-    remaining: &'a mut [f32],
-    line_length: usize,
-}
-
-impl<'a> LineIterMut<'a> {
-    pub fn new(channel: &'a mut Channel) -> Self {
-        Self {
-            line_length: channel.size().x,
-            remaining: channel.raw_mut(),
-        }
-    }
-}
-
-impl<'a> Iterator for LineIterMut<'a> {
-    type Item = IterMut<'a, f32>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining.is_empty() {
-            return None;
-        }
-
-        let remaining = mem::replace(&mut self.remaining, &mut []);
-        let (head, tail) = remaining.split_at_mut(self.line_length);
-        self.remaining = tail;
-        Some(head.iter_mut())
     }
 }
 
@@ -179,14 +151,23 @@ impl Image {
         Desc::new(self.size(), self.channel_count())
     }
 
-    pub fn channels(&self) -> Iter<Channel> {
+    pub fn channels(&self) -> StdIter<Channel> {
         self.channels.iter()
     }
 
-    pub fn channels_mut(&mut self) -> IterMut<Channel> {
+    pub fn channels_mut(&mut self) -> StdIterMut<Channel> {
         self.channels.iter_mut()
     }
 
+    pub fn par_channels(&self) -> ParIter<Channel> {
+        self.channels.par_iter()
+    }
+
+    pub fn par_channels_mut(&mut self) -> ParIterMut<Channel> {
+        self.channels.par_iter_mut()
+    }
+
+    // Replace with FromIterator stuff
     pub fn push(&mut self, channel: Channel) {
         self.channels.push(channel)
     }

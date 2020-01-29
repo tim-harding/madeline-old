@@ -4,6 +4,7 @@ use crate::{
     plugin::{self, *},
     utils::{Value, Vec2U},
 };
+use rayon::prelude::*;
 use std::cmp::max;
 
 // TODO: options for edge-extension
@@ -49,20 +50,24 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let src_sz_x = bg.desc().size.x as isize;
     let src_sz_y = bg.desc().size.y as isize;
     for (src_channel, dst_channel) in bg.channels().zip(out.channels_mut()) {
-        for (y, line) in dst_channel.lines_mut().enumerate() {
-            for (x, px) in line.enumerate() {
-                let src_x = x as isize - left;
-                let src_y = y as isize - top;
-                let src_idx = src_y * src_sz_x + src_x;
-                let black = src_x < 0 || src_x > src_sz_x - 1 || src_y < 0 || src_y > src_sz_y - 1;
-                let sample = if black {
-                    0.0
-                } else {
-                    src_channel[src_idx as usize]
-                };
-                *px = sample;
-            }
-        }
+        dst_channel
+            .par_lines_mut()
+            .enumerate()
+            .for_each(|(y, line)| {
+                for (x, px) in line.iter_mut().enumerate() {
+                    let src_x = x as isize - left;
+                    let src_y = y as isize - top;
+                    let src_idx = src_y * src_sz_x + src_x;
+                    let black =
+                        src_x < 0 || src_x > src_sz_x - 1 || src_y < 0 || src_y > src_sz_y - 1;
+                    let sample = if black {
+                        0.0
+                    } else {
+                        src_channel[src_idx as usize]
+                    };
+                    *px = sample;
+                }
+            })
     }
 
     Ok(out)

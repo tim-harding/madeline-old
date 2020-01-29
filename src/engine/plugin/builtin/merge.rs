@@ -4,7 +4,7 @@ use crate::{
     plugin::{self, *},
     utils::{Value, Vec2I, Vec2U},
 };
-use std::iter::repeat;
+use rayon::prelude::*;
 
 enum Parameters {
     TranslateX,
@@ -40,23 +40,23 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
 
     if fg.channel_count() == 4 {
         // Alpha blended
-        for ((fg_chan, out_chan), alpha_chan) in fg
-            .channels()
+        fg.par_channels()
             .take(3)
-            .zip(out.channels_mut())
-            .zip(repeat(&fg[3]))
-        {
-            for (y, (fg_line, alpha_line)) in fg_chan.lines().zip(alpha_chan.lines()).enumerate() {
-                for (x, (fg_e, alpha_e)) in fg_line.zip(alpha_line).enumerate() {
-                    let pos = translate + Vec2U::new(x, y).into();
-                    let bg_e = out_chan.element(pos);
-                    let value = *fg_e * alpha_e + bg_e * (1.0 - *alpha_e);
-                    out_chan.set_element(pos, value);
+            .zip(out.par_channels_mut())
+            .for_each(|(fg_chan, out_chan)| {
+                for (y, (fg_line, alpha_line)) in fg_chan.lines().zip(fg[3].lines()).enumerate() {
+                    for (x, (fg_e, alpha_e)) in fg_line.iter().zip(alpha_line.iter()).enumerate() {
+                        let pos = translate + Vec2U::new(x, y).into();
+                        let bg_e = out_chan.element(pos);
+                        let value = *fg_e * alpha_e + bg_e * (1.0 - *alpha_e);
+                        out_chan.set_element(pos, value);
+                    }
                 }
-            }
-        }
+            });
+
+        // Cannot borrow `out` as mutable
         for (y, fg_line) in fg[3].lines().enumerate() {
-            for (x, fg_e) in fg_line.enumerate() {
+            for (x, fg_e) in fg_line.iter().enumerate() {
                 let pos = translate + Vec2U::new(x, y).into();
                 let bg_e = out[3].element(pos);
                 let value = 1.0 - (1.0 - fg_e) * (1.0 - bg_e);
@@ -65,14 +65,16 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         }
     } else {
         // Straight copy
-        for (fg_c, out_c) in fg.channels().zip(out.channels_mut()) {
-            for (y, fg_line) in fg_c.lines().enumerate() {
-                for (x, fg_e) in fg_line.enumerate() {
-                    let pos = translate + Vec2U::new(x, y).into();
-                    out_c.set_element(pos, *fg_e);
+        fg.par_channels()
+            .zip(out.par_channels_mut())
+            .for_each(|(fg_c, out_c)| {
+                for (y, fg_line) in fg_c.lines().enumerate() {
+                    for (x, fg_e) in fg_line.iter().enumerate() {
+                        let pos = translate + Vec2U::new(x, y).into();
+                        out_c.set_element(pos, *fg_e);
+                    }
                 }
-            }
-        }
+            })
     }
 
     Ok(out)
