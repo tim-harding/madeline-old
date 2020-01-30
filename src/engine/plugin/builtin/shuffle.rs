@@ -26,9 +26,9 @@ pub fn create() -> Plugin {
 
 fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let bg = match inputs[0] {
-        Some(bg) => bg,
-        None => return Err("Invalid background input".to_string()),
-    };
+        Some(bg) => Ok(bg),
+        None => Err("Invalid background input".to_string()),
+    }?;
 
     let remap = [
         controls[Parameters::R as usize].as_uint(),
@@ -43,7 +43,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
             bg.channels()
                 .nth(*remap)
                 .cloned()
-                .unwrap_or(Channel::black(bg.desc().size))
+                .unwrap_or_else(|| Channel::black(bg.desc().size))
         })
         .collect::<Image>())
 }

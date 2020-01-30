@@ -1,13 +1,12 @@
+use crate::image::ChannelBuilder;
 use crate::{
     control,
-    image::{self, Image},
+    image::Image,
     plugin::{self, *},
     utils::{Value, Vec2U},
 };
 use rayon::prelude::*;
 use std::cmp::max;
-
-// TODO: options for edge-extension
 
 enum Parameters {
     Left,
@@ -44,31 +43,30 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
     let width = max(0, right + left) as usize;
     let height = max(0, bottom + top) as usize;
 
-    let out_desc = image::Desc::new(Vec2U::new(width, height), bg.channel_count());
-    let mut out = Image::from_desc(out_desc);
-
     let src_sz_x = bg.desc().size.x as isize;
     let src_sz_y = bg.desc().size.y as isize;
-    for (src_channel, dst_channel) in bg.channels().zip(out.channels_mut()) {
-        dst_channel
-            .par_lines_mut()
-            .enumerate()
-            .for_each(|(y, line)| {
-                for (x, px) in line.iter_mut().enumerate() {
-                    let src_x = x as isize - left;
-                    let src_y = y as isize - top;
-                    let src_idx = src_y * src_sz_x + src_x;
-                    let black =
-                        src_x < 0 || src_x > src_sz_x - 1 || src_y < 0 || src_y > src_sz_y - 1;
-                    let sample = if black {
-                        0.0
-                    } else {
-                        src_channel[src_idx as usize]
-                    };
-                    *px = sample;
-                }
-            })
-    }
 
-    Ok(out)
+    Ok(bg
+        .par_channels()
+        .map(|src_channel| {
+            (0..height)
+                .map(|y| {
+                    (0..width).map(move |x| {
+                        let src_x = x as isize - left;
+                        let src_y = y as isize - top;
+                        let src_idx = src_y * src_sz_x + src_x;
+                        let black =
+                            src_x < 0 || src_x > src_sz_x - 1 || src_y < 0 || src_y > src_sz_y - 1;
+                        if black {
+                            0.0
+                        } else {
+                            src_channel[src_idx as usize]
+                        }
+                    })
+                })
+                .flatten()
+                .collect::<ChannelBuilder>()
+                .build(Vec2U::new(width, height))
+        })
+        .collect::<Image>())
 }
