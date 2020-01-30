@@ -42,6 +42,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         // Alpha blended
         fg.par_channels()
             .take(3)
+            // Would it be better to parallelize over lines?
             .zip(out.par_channels_mut())
             .for_each(|(fg_chan, out_chan)| {
                 for (y, (fg_line, alpha_line)) in fg_chan.lines().zip(fg[3].lines()).enumerate() {

@@ -1,0 +1,9 @@
+new load tree
+tree.filename = "data/tree.png"
+
+new resize size
+size.bg <- tree
+size.width = 200
+size.height = 2000
+
+glob viewing = size

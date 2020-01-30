@@ -51,6 +51,8 @@ fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
     let flipped = Vec2U::new(channel.size().y, channel.size().x);
     let mut out = Channel::black(flipped);
     let size = (filter.len() / 2 - 1) as isize;
+    // Can't paralellize over lines because it requires
+    // multiple mutable references to `out`
     for y in 0..channel.size().y {
         for x in 0..channel.size().x {
             let out_index = x * channel.size().y + y;

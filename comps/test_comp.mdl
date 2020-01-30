@@ -1,5 +1,3 @@
-# I'm a comment!
-
 # Add option to fix gamma on loader? 
 new load kitty
 kitty.filename = "data/kitty.png"
@@ -32,21 +30,22 @@ new blur gaussian
 gaussian.bg <- weird
 gaussian.size = 12
 
+new resize squash
+squash.bg <- gaussian
+squash.width = 2000
+squash.height = 2000
+
+new crop square
+square.bg <- squash
+square.top = -300
+square.bottom = -300
+square.right = 10
+
 new adjust cc 
-cc.bg <- gaussian
+cc.bg <- square
 cc.saturation = 0.5
 cc.exposure = 1.5
 cc.gamma = 2.2
 cc.invert_gamma = true
 
-glob viewing = cc
-
-
-######################
-# Additions for later:
-
-# Enumerations: 
-# gaussian.kernel = BOX
-
-# Expressions:
-# combine.tx = pow(combine.ty + 20, 0.5) % 100
+glob viewing = squash
