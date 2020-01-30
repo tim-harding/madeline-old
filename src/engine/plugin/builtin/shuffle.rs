@@ -37,15 +37,13 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         controls[Parameters::A as usize].as_uint(),
     ];
 
-    Ok(Image::from_channels(
-        remap
-            .par_iter()
-            .map(|remap| {
-                bg.channels()
-                    .nth(*remap)
-                    .cloned()
-                    .unwrap_or(Channel::black(bg.desc().size))
-            })
-            .collect::<Vec<_>>(),
-    ))
+    Ok(remap
+        .par_iter()
+        .map(|remap| {
+            bg.channels()
+                .nth(*remap)
+                .cloned()
+                .unwrap_or(Channel::black(bg.desc().size))
+        })
+        .collect::<Image>())
 }

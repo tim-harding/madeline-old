@@ -29,21 +29,21 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
         (0..1 + size * 2)
             .map(|i| {
                 let x = i as f32 - f_size;
-                let x = (1.0 - x.abs() / f_size) / f_size;
+                let x = 1.0 - x.abs() / f_size;
                 let rcp = 1.0 - x;
-                rcp * x * x + x * (1.0 - rcp * rcp)
+                let x = rcp * x * x + x * (1.0 - rcp * rcp);
+                x / f_size
             })
             .collect::<Vec<_>>()
     };
 
-    Ok(Image::from_channels(
-        bg.par_channels()
-            .map(|channel| {
-                let tmp = blur_axis(&channel, &filter);
-                blur_axis(&tmp, &filter)
-            })
-            .collect::<Vec<_>>(),
-    ))
+    Ok(bg
+        .par_channels()
+        .map(|channel| {
+            let tmp = blur_axis(&channel, &filter);
+            blur_axis(&tmp, &filter)
+        })
+        .collect::<Image>())
 }
 
 fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
@@ -53,16 +53,14 @@ fn blur_axis(channel: &Channel, filter: &[f32]) -> Channel {
     let size = (filter.len() / 2 - 1) as isize;
     for y in 0..channel.size().y {
         for x in 0..channel.size().x {
-            let mut acc = 0.0;
-            for (i, cell) in filter.iter().enumerate() {
+            let out_index = x * channel.size().y + y;
+            out[out_index] = filter.iter().enumerate().fold(0.0, |acc, (i, cell)| {
                 let sample_x = x as isize + i as isize - size;
                 let sample_x = min(max_dim, max(0, sample_x)) as usize;
                 let index = y * channel.size().x + sample_x;
-                let sample = channel.raw()[index];
-                acc += sample * cell;
-            }
-            let out_index = x * channel.size().y + y;
-            out[out_index] = acc;
+                let sample = channel[index];
+                acc + sample * cell
+            });
         }
     }
     out

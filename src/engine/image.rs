@@ -28,29 +28,15 @@ impl Desc {
 #[derive(Debug, Clone)]
 pub struct Channel {
     size: Vec2U,
-    pixels: Vec<f32>,
+    elements: Vec<f32>,
 }
 
 impl Channel {
     pub fn black(size: Vec2U) -> Self {
         Self {
             size,
-            pixels: vec![0.0; size.area()],
+            elements: vec![0.0; size.area()],
         }
-    }
-
-    // Using this instead of FromIterator because,
-    // for Rayon, par_iter.collect_into_vec() can
-    // be more efficient. That method is only available
-    // for rayon::slice::Iter, which the FromParallelIterator
-    // trait does not support. It is better to create the
-    // vector separately using `collect_into_vec` and then
-    // construct the channel from that data. I don't want to be
-    // confusing by offering a FromIterator implementation
-    // but not a FromParallelIterator implementation.
-    pub fn from_elements(size: Vec2U, pixels: Vec<f32>) -> Self {
-        assert!(size.area() == pixels.len());
-        Self { size, pixels }
     }
 
     pub fn size(&self) -> Vec2U {
@@ -58,23 +44,23 @@ impl Channel {
     }
 
     pub fn elements(&self) -> StdIter<f32> {
-        self.pixels.iter()
+        self.elements.iter()
     }
 
     pub fn elements_mut(&mut self) -> StdIterMut<f32> {
-        self.pixels.iter_mut()
+        self.elements.iter_mut()
     }
 
     // Callers should probably use .chunks() with this
     // or the step size will be too small for parallelism
     // to be an effective tool
     pub fn par_elements(&self) -> ParIter<f32> {
-        self.pixels.par_iter()
+        self.elements.par_iter()
     }
 
     // Samesies
     pub fn par_elements_mut(&mut self) -> ParIterMut<f32> {
-        self.pixels.par_iter_mut()
+        self.elements.par_iter_mut()
     }
 
     pub fn index_of(&self, pos: Vec2I) -> Option<usize> {
@@ -86,28 +72,20 @@ impl Channel {
         }
     }
 
-    pub fn raw(&self) -> &[f32] {
-        self.pixels.as_slice()
-    }
-
-    pub fn raw_mut(&mut self) -> &mut [f32] {
-        self.pixels.as_mut_slice()
-    }
-
     pub fn lines(&self) -> StdLines {
-        self.pixels.chunks_exact(self.size.x)
+        self.elements.chunks_exact(self.size.x)
     }
 
     pub fn lines_mut(&mut self) -> StdLinesMut {
-        self.pixels.chunks_exact_mut(self.size.x)
+        self.elements.chunks_exact_mut(self.size.x)
     }
 
     pub fn par_lines(&self) -> ParLines {
-        self.pixels.par_chunks(self.size.x)
+        self.elements.par_chunks(self.size.x)
     }
 
     pub fn par_lines_mut(&mut self) -> ParLinesMut {
-        self.pixels.par_chunks_mut(self.size.x)
+        self.elements.par_chunks_mut(self.size.x)
     }
 }
 
@@ -115,13 +93,49 @@ impl Index<usize> for Channel {
     type Output = f32;
 
     fn index(&self, i: usize) -> &Self::Output {
-        &self.pixels[i]
+        &self.elements[i]
     }
 }
 
 impl IndexMut<usize> for Channel {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
-        &mut self.pixels[i]
+        &mut self.elements[i]
+    }
+}
+
+pub struct ChannelBuilder {
+    elements: Vec<f32>,
+}
+
+impl ChannelBuilder {
+    pub fn build(self, size: Vec2U) -> Channel {
+        assert!(size.area() == self.elements.len());
+        Channel {
+            elements: self.elements,
+            size,
+        }
+    }
+}
+
+impl std::iter::FromIterator<f32> for ChannelBuilder {
+    fn from_iter<I>(src: I) -> Self
+    where
+        I: IntoIterator<Item = f32>,
+    {
+        Self {
+            elements: src.into_iter().collect::<Vec<_>>(),
+        }
+    }
+}
+
+impl rayon::iter::FromParallelIterator<f32> for ChannelBuilder {
+    fn from_par_iter<I>(src: I) -> Self
+    where
+        I: IntoParallelIterator<Item = f32>,
+    {
+        Self {
+            elements: src.into_par_iter().collect::<Vec<_>>(),
+        }
     }
 }
 
@@ -132,13 +146,10 @@ pub struct Image {
 
 impl Image {
     pub fn from_desc(desc: Desc) -> Self {
+        assert!(desc.channels > 0);
         Self {
             channels: vec![Channel::black(desc.size); desc.channels],
         }
-    }
-
-    pub fn from_channels(channels: Vec<Channel>) -> Self {
-        Self { channels }
     }
 
     pub fn size(&self) -> Vec2U {
@@ -182,4 +193,37 @@ impl IndexMut<usize> for Image {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.channels[i]
     }
+}
+
+impl std::iter::FromIterator<Channel> for Image {
+    fn from_iter<I>(src: I) -> Self
+    where
+        I: IntoIterator<Item = Channel>,
+    {
+        let channels = src.into_iter().collect::<Vec<_>>();
+        assert!(channels_are_valid(&channels));
+        Self { channels }
+    }
+}
+
+impl rayon::iter::FromParallelIterator<Channel> for Image {
+    fn from_par_iter<I>(src: I) -> Self
+    where
+        I: IntoParallelIterator<Item = Channel>,
+    {
+        let channels = src.into_par_iter().collect::<Vec<_>>();
+        assert!(channels_are_valid(&channels));
+        Self { channels }
+    }
+}
+
+fn channels_are_valid(channels: &[Channel]) -> bool {
+    let mut iter = channels.iter();
+    let first = match iter.next() {
+        Some(first) => first,
+        // Should have at least one channel
+        None => return false,
+    };
+    // All channels should use the same format
+    channels.iter().all(|c| c.size() == first.size())
 }

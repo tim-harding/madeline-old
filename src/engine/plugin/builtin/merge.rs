@@ -48,9 +48,9 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
                     for (x, (fg_e, alpha_e)) in fg_line.iter().zip(alpha_line.iter()).enumerate() {
                         let pos = translate + Vec2U::new(x, y).into();
                         if let Some(index) = out_chan.index_of(pos) {
-                            let bg_e = out_chan.raw()[index];
+                            let bg_e = out_chan[index];
                             let value = *fg_e * alpha_e + bg_e * (1.0 - *alpha_e);
-                            out_chan.raw_mut()[index] = value;
+                            out_chan[index] = value;
                         }
                     }
                 }
@@ -61,9 +61,9 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
             for (x, fg_e) in fg_line.iter().enumerate() {
                 let pos = translate + Vec2U::new(x, y).into();
                 if let Some(index) = out_a.index_of(pos) {
-                    let bg_e = out_a.raw()[index];
+                    let bg_e = out_a[index];
                     let value = 1.0 - (1.0 - fg_e) * (1.0 - bg_e);
-                    out_a.raw_mut()[index] = value;
+                    out_a[index] = value;
                 }
             }
         }
