@@ -1,15 +1,18 @@
 # I'm a comment!
 
+# Add option to fix gamma on loader? 
 new load kitty
 kitty.filename = "data/kitty.png"
 
 new load tree
 tree.filename = "data/tree.png"
 
-new gamma linear_tree
+new adjust linear_tree
+linear_tree.gamma = 2.2
 linear_tree.bg <- tree
 
-new gamma linear_kitty
+new adjust linear_kitty
+linear_kitty.gamma = 2.2
 linear_kitty.bg <- kitty
 
 new merge combine
@@ -29,17 +32,14 @@ new blur gaussian
 gaussian.bg <- weird
 gaussian.size = 12
 
-new correct cc 
+new adjust cc 
 cc.bg <- gaussian
-# cc.hue_rotation = 3.14
 cc.saturation = 0.5
 cc.exposure = 1.5
+cc.gamma = 2.2
+cc.invert_gamma = true
 
-new gamma delinear
-delinear.bg <- cc
-delinear.invert = true
-
-glob viewing = delinear
+glob viewing = cc
 
 
 ######################
