@@ -48,4 +48,4 @@ cc.exposure = 1.5
 cc.gamma = 2.2
 cc.invert_gamma = true
 
-glob viewing = squash
+glob viewing = cc
