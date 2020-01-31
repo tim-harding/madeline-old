@@ -37,7 +37,7 @@ fn render(inputs: Inputs, controls: Controls) -> Result<Image, String> {
 }
 
 fn scale_axis(src: &Image, dim: usize) -> Image {
-    if dim > src.desc().size.y {
+    if dim > src.desc().size.x {
         upscale_axis(src, dim)
     } else {
         downscale_axis(src, dim)
@@ -55,14 +55,14 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
                     // dst_y is bigger, downscale to src_y
                     let pivot = y as f32 * scale_factor;
                     let frac = pivot.fract();
-                    let frac2 = frac * frac;
 
                     let pivot = pivot as isize;
                     let srcn = max(0, pivot - 1) as usize;
                     let pivot = pivot as usize;
-                    let src0 = min(src.size().x - 1, pivot);
-                    let src1 = min(src.size().x - 1, pivot + 1);
-                    let src2 = min(src.size().x - 1, pivot + 2);
+                    let clip = src.size().x - 1;
+                    let src0 = min(clip, pivot);
+                    let src1 = min(clip, pivot + 1);
+                    let src2 = min(clip, pivot + 2);
 
                     // dst_x maps to src_y directly
                     let srcy = x * src.size().x;
@@ -77,6 +77,7 @@ fn upscale_axis(src: &Image, dim: usize) -> Image {
                     let a2 = -0.5 * y0 + 0.5 * y2;
                     let a3 = y1;
 
+                    let frac2 = frac * frac;
                     let out_index = y * dst_size.x + x;
                     dst[out_index] = a0 * frac2 * frac + a1 * frac2 + a2 * frac + a3;
                 }
