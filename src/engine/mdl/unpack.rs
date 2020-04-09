@@ -9,12 +9,12 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
                 None => Err(format!("Node name not found: {}", member.node)),
             }?;
 
-            let plugin_id = match engine.nodes.get_ref(*node_id) {
+            let plugin_id = match engine.nodes.get(node_id) {
                 Some(node) => node.plugin,
                 None => unreachable!(),
             };
 
-            let control_index = match engine.plugins.get_ref(plugin_id) {
+            let control_index = match engine.plugins.get(&plugin_id) {
                 Some(plugin) => plugin
                     .desc()
                     .index_for_control(&member.attr)
@@ -22,7 +22,7 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
                 None => unreachable!(),
             }?;
 
-            match engine.controls.get_mut(*node_id) {
+            match engine.controls.get_mut(node_id) {
                 Some(controls) => {
                     let control = &controls[control_index];
                     controls[control_index] = match (control, value) {
@@ -92,11 +92,11 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
                 Some(id) => Ok(id),
                 None => Err(format!("Upstream node name not found: {}", upstream)),
             }?;
-            let downstream_node = match engine.nodes.get(*downstream_id) {
+            let downstream_node = match engine.nodes.get(downstream_id) {
                 Some(node) => node,
                 None => unreachable!(),
             };
-            let downstream_plugin = match engine.plugins.get_ref(downstream_node.plugin) {
+            let downstream_plugin = match engine.plugins.get(&downstream_node.plugin) {
                 Some(plugin) => plugin,
                 None => unreachable!(),
             };
@@ -106,7 +106,7 @@ pub fn apply(engine: &mut Engine, statement: &Statement) -> Result<(), String> {
             }?;
             engine
                 .graph
-                .connect(*downstream_id, *upstream_id, input, &mut engine.dfs);
+                .connect(*downstream_id, *upstream_id, input as u8);
             Ok(())
         }
     }

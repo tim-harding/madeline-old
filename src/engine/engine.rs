@@ -1,25 +1,25 @@
 use crate::{
-    graph::{Dfs, Graph, Node},
+    graph::{Graph, Node},
     image::Image,
     plugin::{self, Plugin},
-    utils::{Id, Table, Value},
+    utils::{Id, Value},
 };
 use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct Engine {
-    pub viewing: usize,
+    next_id: Id,
+    pub viewing: Id,
 
-    pub plugins: Table<Plugin>,
+    pub plugins: HashMap<Id, Plugin>,
     pub plugin_names: HashMap<String, Id>,
 
-    pub nodes: Table<Node>,
+    pub nodes: HashMap<Id, Node>,
     pub node_names: HashMap<String, Id>,
 
     pub graph: Graph,
-    pub dfs: Dfs,
-    pub controls: Table<Vec<Value>>,
-    pub images: Table<Image>,
+    pub controls: HashMap<Id, Vec<Value>>,
+    pub images: HashMap<Id, Image>,
 }
 
 impl Engine {
@@ -30,24 +30,24 @@ impl Engine {
     }
 
     pub fn insert_node(&mut self, node: Node, name: String) -> Id {
-        let id = self.images.insert(Default::default());
-        self.dfs.insert_node();
-        self.nodes.insert(node);
-        if let Some(plugin) = self.plugins.get_ref(node.plugin) {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.images.insert(id, Default::default());
+        self.nodes.insert(id, node);
+        if let Some(plugin) = self.plugins.get(&node.plugin) {
             let desc = plugin.desc();
-            self.graph.insert_node(desc.inputs_len());
-            self.controls.insert(desc.controls());
+            self.graph.insert_node();
+            self.controls.insert(id, desc.controls());
             self.node_names.insert(name, id);
         }
         id
     }
 
-    pub fn delete_node(&mut self, id: usize) {
-        self.images.delete(id);
-        self.dfs.delete_node(id);
-        self.nodes.delete(id);
+    pub fn delete_node(&mut self, id: Id) {
+        self.images.remove(&id);
+        self.nodes.remove(&id);
         self.graph.delete_node(id);
-        self.controls.delete(id);
+        self.controls.remove(&id);
 
         let to_remove = self
             .node_names
@@ -59,38 +59,29 @@ impl Engine {
     }
 
     pub fn render(&mut self) -> Result<&Image, String> {
-        self.dfs.process_queue(self.viewing, &self.graph);
-        let queue = self.dfs.render_queue();
-        for id in queue.iter() {
-            let node = self.nodes.get(*id).ok_or("Node not found")?;
+        let queue = self.graph.render_queue(self.viewing);
+        for id in queue.iter().rev() {
+            let node = self.nodes.get(id).ok_or("Node not found")?;
             if !node.dirty {
                 continue;
             }
             let plugin = self
                 .plugins
-                .get_ref(node.plugin)
+                .get(&node.plugin)
                 .ok_or("Plugin not found")?;
-            let controls = self.controls.get_ref(*id).ok_or("Controls not found")?;
-            let inputs = self
-                .graph
-                .0
-                .get_ref(*id)
-                .map(|inputs| {
-                    inputs
-                        .iter()
-                        .map(|maybe_id| {
-                            maybe_id
-                                .map(|input_id| self.images.get_ref(input_id))
-                                .flatten()
-                        })
-                        .collect::<Vec<_>>()
+            let controls = self.controls.get(id).ok_or("Controls not found")?;
+            let inputs: Vec<_> = (0..plugin.desc().inputs_len())
+                .flat_map(|input| {
+                    self.graph
+                        .input(*id, input as u8)
+                        .map(|node| self.images.get(&node))
                 })
-                .ok_or("Inputs not found")?;
+                .collect();
             let render = plugin.render(inputs.as_slice(), controls.as_slice())?;
-            self.images.update(*id, render);
+            self.images.entry(*id).and_modify(|e| *e = render);
         }
         self.images
-            .get_ref(self.viewing)
+            .get(&self.viewing)
             .ok_or_else(|| "Comp image not found".into())
     }
 }

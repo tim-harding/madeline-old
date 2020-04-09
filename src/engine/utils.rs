@@ -1,9 +1,6 @@
 mod vector2;
 pub use vector2::*;
 
-mod table;
-pub use table::Table;
-
 pub mod io;
 
 mod enumeration;
