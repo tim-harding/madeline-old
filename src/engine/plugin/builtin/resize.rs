@@ -122,8 +122,14 @@ fn downscale_axis(src: &Image, dim: usize) -> Image {
 }
 
 fn filter(src: f32, radius: f32) -> f32 {
-    // Sawtooth
-    let x = (1.0 - src.abs() / radius).clamp(0.0, 1.0);
+    let sawtooth = 1.0 - src.abs() / radius;
+    let x = if sawtooth < 0.0 {
+        0.0
+    } else if sawtooth > 1.0 {
+        1.0
+    } else {
+        sawtooth
+    };
 
     // Smoothstep
     let rcp = 1.0 - x;

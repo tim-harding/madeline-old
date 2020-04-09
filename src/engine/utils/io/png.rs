@@ -63,7 +63,14 @@ pub fn save(file: &File, image: &Image) -> Result<(), String> {
     for (channel_i, channel) in image.channels().enumerate() {
         for (element_i, element) in channel.elements().enumerate() {
             let i = element_i * image.channel_count() + channel_i;
-            data[i] = (element.clamp(0.0, 1.0) * 255.0) as u8;
+            let clamped = if *element < 0.0 {
+                0.0
+            } else if *element > 1.0 {
+                1.0
+            } else {
+                *element
+            };
+            data[i] = (clamped * 255.0) as u8;
         }
     }
 
